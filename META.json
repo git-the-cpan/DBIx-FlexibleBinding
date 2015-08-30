@@ -1,0 +1,57 @@
+{
+   "abstract" : "flexible parameter binding and record fetching",
+   "author" : [
+      "Iain Campbell <cpanic@cpan.org>"
+   ],
+   "dynamic_config" : 1,
+   "generated_by" : "ExtUtils::MakeMaker version 7.04, CPAN::Meta::Converter version 2.150005",
+   "license" : [
+      "gpl_2"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "DBIx-FlexibleBinding",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "inc"
+      ]
+   },
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "DBD::SQLite" : "0",
+            "DBI" : "0",
+            "JSON::Syck" : "0",
+            "Test::More" : "0"
+         }
+      },
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "0"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "DBI" : "0",
+            "List::MoreUtils" : "0",
+            "MRO::Compat" : "0",
+            "Scalar::Util" : "0",
+            "namespace::clean" : "0",
+            "perl" : "5.006"
+         }
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/cpanic/Params-Callbacks.git",
+         "web" : "https://github.com/cpanic/Params-Callbacks"
+      }
+   },
+   "version" : "0.001000",
+   "x_serialization_backend" : "JSON::PP version 2.27300"
+}
