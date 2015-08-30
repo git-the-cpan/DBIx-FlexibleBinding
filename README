@@ -1,17 +1,35 @@
 DBIx-FlexibleBinding
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
+A DBI subclass that implements the following features:
 
-A README file is required for CPAN modules since CPAN extracts the README
-file from a module distribution so that people browsing the archive
-can use it to get an idea of the module's uses. It is usually a good idea
-to provide version information here so that people can decide whether
-fixes for the module are worth downloading.
-
-
+    Support for multiple parameter placeholder schemes
+        * Standard positional placeholders (?)
+        * Numeric placeholders (:1 and ?1)
+        * Named placeholders (:NAME and @NAME)
+    
+    Flexible argument list binding mechanisms
+        * (list of values) and [list of values] for positional.
+          placeholders.
+        * (list of values) and [list of values] for numeric placeholders.
+        * (list of key-value pairs), [list of key-value pairs] and 
+          {list of key-value pairs} for named placeholders.
+        
+    Automatic binding dependant on disposition of placeholders
+    
+    Additional statement methods supporting fetching and processing 
+    using callbacks
+        * $sth->processrow_arrayref(CALLBACKS)
+        * $sth->processrow_hashref(CALLBACKS)
+        * $sth->processall_arrayref(CALLBACKS)
+        * $sth->processall_hashref(CALLBACKS)
+        
+    Additional database methods supporting preparation, execution, fetching 
+    and processing using callbacks
+        * $dbh->processrow_arrayref(STATEMENT, ATTRS, BINDINGS, CALLBACKS)
+        * $dbh->processrow_hashref(STATEMENT, ATTRS, BINDINGS, CALLBACKS)
+        * $dbh->processall_arrayref(STATEMENT, ATTRS, BINDINGS, CALLBACKS)
+        * $dbh->processall_hashref(STATEMENT, ATTRS, BINDINGS, CALLBACKS)
+        
 INSTALLATION
 
 To install this module, run the following commands:

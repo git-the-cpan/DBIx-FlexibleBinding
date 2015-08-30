@@ -52,6 +52,6 @@
          "web" : "https://github.com/cpanic/Params-Callbacks"
       }
    },
-   "version" : "0.001001",
+   "version" : "0.001002",
    "x_serialization_backend" : "JSON::PP version 2.27300"
 }

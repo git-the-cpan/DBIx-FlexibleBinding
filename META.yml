@@ -29,5 +29,5 @@ requires:
   perl: '5.006'
 resources:
   repository: https://github.com/cpanic/Params-Callbacks.git
-version: '0.001001'
+version: '0.001002'
 x_serialization_backend: 'CPAN::Meta::YAML version 0.016'
