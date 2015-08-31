@@ -1,5 +1,5 @@
 ---
-abstract: 'flexible parameter binding and record fetching'
+abstract: 'Flexible parameter binding and record fetching'
 author:
   - 'Iain Campbell <cpanic@cpan.org>'
 build_requires:
@@ -21,13 +21,16 @@ no_index:
     - t
     - inc
 requires:
+  Carp: '0'
   DBI: '0'
   List::MoreUtils: '0'
   MRO::Compat: '0'
+  Params::Callbacks: '0'
   Scalar::Util: '0'
+  Sub::Name: '0'
   namespace::clean: '0'
   perl: '5.006'
 resources:
-  repository: https://github.com/cpanic/Params-Callbacks.git
-version: '0.001002'
+  repository: https://github.com/cpanic/DBIx-FlexibleBinding.git
+version: '0.001003'
 x_serialization_backend: 'CPAN::Meta::YAML version 0.016'

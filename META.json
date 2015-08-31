@@ -1,5 +1,5 @@
 {
-   "abstract" : "flexible parameter binding and record fetching",
+   "abstract" : "Flexible parameter binding and record fetching",
    "author" : [
       "Iain Campbell <cpanic@cpan.org>"
    ],
@@ -35,10 +35,13 @@
       },
       "runtime" : {
          "requires" : {
+            "Carp" : "0",
             "DBI" : "0",
             "List::MoreUtils" : "0",
             "MRO::Compat" : "0",
+            "Params::Callbacks" : "0",
             "Scalar::Util" : "0",
+            "Sub::Name" : "0",
             "namespace::clean" : "0",
             "perl" : "5.006"
          }
@@ -48,10 +51,10 @@
    "resources" : {
       "repository" : {
          "type" : "git",
-         "url" : "https://github.com/cpanic/Params-Callbacks.git",
-         "web" : "https://github.com/cpanic/Params-Callbacks"
+         "url" : "https://github.com/cpanic/DBIx-FlexibleBinding.git",
+         "web" : "https://github.com/cpanic/DBIx-FlexibleBinding"
       }
    },
-   "version" : "0.001002",
+   "version" : "0.001003",
    "x_serialization_backend" : "JSON::PP version 2.27300"
 }
