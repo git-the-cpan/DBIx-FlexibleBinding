@@ -32,5 +32,5 @@ requires:
   perl: '5.006'
 resources:
   repository: https://github.com/cpanic/DBIx-FlexibleBinding.git
-version: '0.001003'
+version: '0.001004'
 x_serialization_backend: 'CPAN::Meta::YAML version 0.016'

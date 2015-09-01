@@ -11,7 +11,7 @@ $Data::Dumper::Indent = 0;
 
 BEGIN
 {
-    use_ok( 'DBIx::FlexibleBinding', ':all', -alias => 'DBIx::FB', -subs => ['DB'] ) || print "Bail out!\n";
+    use_ok( 'DBIx::FlexibleBinding', ':all', -alias => 'DBIx::FB', -subs => ['DB', 'statement'] ) || print "Bail out!\n";
 }
 
 diag "Testing DBIx::FlexibleBinding $DBIx::FlexibleBinding::VERSION, Perl $], $^X";
@@ -115,7 +115,7 @@ EOF
                 $create_copy = $create;
             }
 
-            skip "Connection to datasource failed ($dsn); tests skipped for $driver", 1
+            skip "$driver tests (no connection to '$dsn')", 1
               unless defined $dbh;
 
             # Yay, we got a connection, and compile-time tagging clearly works!
@@ -652,6 +652,23 @@ EOF
                 diag "";
                 is( $count, 8, 'callback' );                                        # Callback was called 8 times
                 is_deeply( $result, $expect, 'result' );                            # Good result!
+
+                $sql = 'SELECT solarSystemName AS name, security FROM mapsolarsystems WHERE regional = :regional AND security >= :security';
+                $expect = [
+                            { name => 'Kisogo',      security => '1' },
+                            { name => 'New Caldari', security => '1' },
+                            { name => 'Amarr',       security => '1' },
+                            { name => 'Bourynes',    security => '1' },
+                            { name => 'Ryddinjorn',  security => '1' },
+                            { name => 'Luminaire',   security => '1' },
+                            { name => 'Duripant',    security => '1' },
+                            { name => 'Yulai',       security => '1' }
+                ];
+                my $sth = $dbh->prepare($sql);
+                statement($sth);
+                is(statement(), $sth, 'statement proxy assignment');
+                $result = statement(regional => 1, security => 1.0);
+                is_deeply( $result, $expect, 'statement proxy execution' );                            # statement proxies work!
             }
 
             $dbh->disconnect();

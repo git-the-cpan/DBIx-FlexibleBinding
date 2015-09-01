@@ -55,6 +55,6 @@
          "web" : "https://github.com/cpanic/DBIx-FlexibleBinding"
       }
    },
-   "version" : "0.001003",
+   "version" : "0.001004",
    "x_serialization_backend" : "JSON::PP version 2.27300"
 }
