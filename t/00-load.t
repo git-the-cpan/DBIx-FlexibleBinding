@@ -11,7 +11,7 @@ $Data::Dumper::Indent = 0;
 
 BEGIN
 {
-    use_ok( 'DBIx::FlexibleBinding', ':all', -alias => 'DBIx::FB', -subs => ['DB', 'statement'] ) || print "Bail out!\n";
+    use_ok( 'DBIx::FlexibleBinding', -alias => 'DBIx::FB', -subs => ['DB', 'statement'] ) || print "Bail out!\n";
 }
 
 diag "Testing DBIx::FlexibleBinding $DBIx::FlexibleBinding::VERSION, Perl $], $^X";

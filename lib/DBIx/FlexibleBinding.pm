@@ -12,12 +12,12 @@ This module extends the DBI allowing you choose from a variety of supported
 parameter placeholder and binding patterns as well as offering simplified
 ways to interact with datasources, while improving general readability.
 
-    ###############################################################################
-    # SCENARIO 1
-    # A connect followed by a prepare-execute-process cycle
-    ###############################################################################
+    #########################################################
+    # SCENARIO 1                                            #
+    # A connect followed by a prepare-execute-process cycle #
+    #########################################################
 
-    use DBIx::FlexibleBinding ':all';
+    use DBIx::FlexibleBinding;
     use constant DSN => 'dbi:mysql:test;host=127.0.0.1';
     use constant SQL => << '//';
     SELECT solarSystemName AS name
@@ -44,13 +44,13 @@ ways to interact with datasources, while improving general readability.
     #
     my @system_names = $sth->processall_hashref(callback { $_->{name} });
 
-    ###############################################################################
-    # SCENARIO 2
-    # Let's simplify the previous scenario using the database handle's version
-    # of that processall_hashref method.
-    ###############################################################################
+    ############################################################################
+    # SCENARIO 2                                                               #
+    # Let's simplify the previous scenario using the database handle's version #
+    # of that processall_hashref method.                                       #
+    ############################################################################
 
-    use DBIx::FlexibleBinding ':all', -alias => 'DFB';
+    use DBIx::FlexibleBinding -alias => 'DFB';
     use constant DSN => 'dbi:mysql:test;host=127.0.0.1';
     use constant SQL => << '//';
     SELECT solarSystemName AS name
@@ -70,13 +70,13 @@ ways to interact with datasources, while improving general readability.
                                                 minimum_security => 1.0,
                                                 callback { $_->{name} });
 
-    ###############################################################################
-    # SCENARIO 3
-    # The subclass import method provides a versatile mechanism for simplifying
-    # matters further.
-    ###############################################################################
+    #############################################################################
+    # SCENARIO 3                                                                #
+    # The subclass import method provides a versatile mechanism for simplifying #
+    # matters further.                                                          #
+    #############################################################################
 
-    use DBIx::FlexibleBinding ':all', -subs => [ 'MyDB' ];
+    use DBIx::FlexibleBinding -subs => [ 'MyDB' ];
     use constant DSN => 'dbi:mysql:test;host=127.0.0.1';
     use constant SQL => << '//';
     SELECT solarSystemName AS name
@@ -105,29 +105,23 @@ in the following areas:
 
 =item * Accessing and interacting with datasources
 
-=item * Parameter placeholder and data binding
+=item * Parameter placeholders and data binding
 
 =item * Data retrieval and processing
-
 
 =back
 
 =head2 Accessing and interacting with datasources
 
-The module's C<-subs> import option may be used to create and import special
-soubroutines into the caller's own namespace, whose roles are to act as proxies
-for database or statement handles. To begin with, these subroutines exist in an
-undefined state and aren't very useful. The caller should first assign them to
-a database or statement handle in order to them.
-
-These proxies may be used in a variety of ways. Exactly what they do depends upon
-the context in which they are used.
+The module's C<-subs> import option may be used to create subroutines,
+during the compile phase, and export them to the caller's namespace for
+use later as representations of database and statement handles.
 
 =over 2
 
 =item * Use for connecting to datasources
 
-    use DBIx::FlexibleBinding ':all', -subs => [ 'MyDB' ];
+    use DBIx::FlexibleBinding -subs => [ 'MyDB' ];
 
     # Pass in any set of well-formed DBI->connect(...) arguments to associate
     # your name with a live database connection ...
@@ -140,7 +134,7 @@ the context in which they are used.
 
 =item * Use them to represent database handles
 
-    use DBIx::FlexibleBinding ':all', -subs => [ 'MyDB' ];
+    use DBIx::FlexibleBinding -subs => [ 'MyDB' ];
     use constant SQL => << '//';
     SELECT *
       FROM mapsolarsystems
@@ -157,7 +151,7 @@ the context in which they are used.
 
 =item * Use them to represent statement handles
 
-    use DBIx::FlexibleBinding ':all', -subs => [ 'MyDB', 'solar_systems' ];
+    use DBIx::FlexibleBinding -subs => [ 'MyDB', 'solar_systems' ];
     use constant SQL => << '//';
     SELECT *
       FROM mapsolarsystems
@@ -176,7 +170,7 @@ the context in which they are used.
 
 =item * Use to interact with the represented database and statement handles
 
-    use DBIx::FlexibleBinding ':all', -subs => [ 'MyDB', 'solar_systems' ];
+    use DBIx::FlexibleBinding -subs => [ 'MyDB', 'solar_systems' ];
     use constant SQL => << '//';
     SELECT *
       FROM mapsolarsystems
@@ -238,70 +232,52 @@ the context in which they are used.
 
 =back
 
-Just be aware that this option automatically relaxes C<strict 'refs'> for the
-remainder of the caller's scope containing the C<use> directive. That is,
-unless C<use strict 'refs'> or C<use strict> appears after that point.
+=head2 Parameter placeholders and data binding
 
-=head2 Parameter placeholder and data binding
+This module provides support for a wider range of parameter placeholder and
+data-binding schemes. As well as continued support for the simple positional
+placeholders (C<?>), additional support is provided for numeric placeholders (C<:N>
+and C<?N>), and named placeholders (C<:NAME> and C<@NAME>).
 
-This module provides support for a wider range of data-binding and parameter
-placeholder schemes. In addition to maintaining support for standard positional
-placeholders (C<?>), this module provides additional support for numeric
-placeholders (C<:N>) and (C<?N>) and named placeholders (C<:NAME> and C<@NAME>).
+As for the process of binding data values to parameters: that is, by default,
+now completely automated, removing a significant part of the workload from the
+prepare-bind-execute cycle. It is, however, possible to swtch off automatic
+data-binding globally and on a statement-by-statement basis.
 
-The process of binding data values to parameters is, by default, completely
-automated and removes a significant part of the workload from the traditional
-prepare-bind-execute cycle. It is also possible to swtch off the automatic
-binding feature.
-
-The following familiar operations have been enhanced scenes to accommodate these
-changes.
+The following familiar operations have been modified to accommodate all of these
+changes, though developers continue to use them as they always have done:
 
 =over 2
 
-=item * $DATABASE_HANDLE->prepare($STATEMENT, \%ATTR);
+=item * C<$DATABASE_HANDLE-E<gt>prepare($STATEMENT, \%ATTR);>
 
-=item * $DATABASE_HANDLE->do($STATEMENT, \%ATTR, @DATA);
+=item * C<$DATABASE_HANDLE-E<gt>do($STATEMENT, \%ATTR, @DATA);>
 
-=item * $STATEMENT_HANDLE->bind_param($NAME_OR_POSITION, $VALUE, \%ATTR);
+=item * C<$STATEMENT_HANDLE-E<gt>bind_param($NAME_OR_POSITION, $VALUE, \%ATTR);>
 
-=item * $STATEMENT_HANDLE->execute(@DATA);
+=item * C<$STATEMENT_HANDLE-E<gt>execute(@DATA);>
 
 =back
 
 =head2 Data retrieval and processing
 
 Four new methods, each available for database B<and> statement handles, have
-been implemented to provide new ways to fetch and optionally transform individual
-rows and entire result sets.
+been implemented:
 
 =over 2
 
-=item * processrow_arrayref
+=item * C<processrow_arrayref>
 
-Fetches the next row as an array reference, optionally transforms it using
-blocking callbacks, and returns the result which may me a reference
-or other scalar value.
+=item * C<processrow_hashref>
 
-=item * processrow_hashref
+=item * C<processall_arrayref>
 
-Fetches the next row as an hash reference, optionally transforms it using
-blocking callbacks, and returns the result which may me a reference
-or other scalar value.
-
-=item * processall_arrayref
-
-Fetches all rows as array references, optionally transforms them using
-blocking callbacks, and returns the entire result set as an array
-reference (or as an array when in called in list context).
-
-=item * processall_hashref
-
-Fetches all rows as hash references, optionally transforms them using
-blocking callbacks, and returns the entire result set as an array
-reference (or as an array when in called in list context).
+=item * C<processall_hashref>
 
 =back
+
+These methods complement DBI's existing fetch methods, providing new ways to
+retrieve and process data.
 
 =cut
 
@@ -317,41 +293,34 @@ use Sub::Name;
 use namespace::clean;
 use Params::Callbacks 'callback';
 
-our $VERSION     = '0.001004';
-our @ISA         = ( 'DBI', 'Exporter' );
-our @EXPORT_OK   = qw(callback);
-our %EXPORT_TAGS = ( all => \@EXPORT_OK, ALL => \@EXPORT_OK );
+our $VERSION = '0.001005';
+our @ISA     = ( 'DBI', 'Exporter' );
+our @EXPORT  = qw(callback);
 
 =head1 PACKAGE GLOBALS
 
-=over 2
+=head2 $DBIx::FlexibleBinding::AUTO_BINDING_ENABLED
 
-=item B<$DBIx::FlexibleBinding::DEFAULT_AUTO_BIND>
+A boolean setting used to determine whether or not automatic binding is enabled
+or disabled globally.
 
-A boolean setting used to determine whether or not automatic parameter binding
-should take place when executing statements prepared using a non-standard
-placeholder scheme (i.e anything other than the standard positional (C<?>)
-scheme).
+The default setting is C<"1"> (I<enabled>).
 
-The default setting is C<1> and binding is automatic. You should rarely, if
-ever, need to change this.
+=head2 $DBIx::FlexibleBinding::PROXIES_PROCESSALL_USING
 
-=item B<$DBIx::FlexibleBinding::DEFAULT_PROCESSOR>
+The subroutines created with the C<-subs> import option may be used to
+retrieve result sets. By default, any such subroutines delegate that particular
+task to a method called C<"processall_hashref">, which is provided by this module
+for both database and statement handles alike.
 
-A string setting used by those subroutines listed using the C<-subs> import
-option and being used as proxies for database or statement handles. It determines
-which method gets called to fetch results when the proxy is called upon to
-execute statements.
-
-The default is for these souroutines setting is C<processall_hashref>, one of
-the methods defined by the C<DBIx::FlexibleBinding::db> package.
-
-=back
+For reasons of efficiency the developer may prefer array references over hash
+references, in which case they only need assign the value C<"processall_arrayref">
+to this global.
 
 =cut
 
-our $DEFAULT_AUTO_BIND = 1;
-our $DEFAULT_PROCESSOR = 'processall_hashref';
+our $AUTO_BINDING_ENABLED     = 1;
+our $PROXIES_PROCESSALL_USING = 'processall_hashref';
 
 
 sub _dbix_set_err
@@ -392,7 +361,7 @@ sub _dbix_set_err
                         $proxies{$name}->execute();
                     }
                 }
-                return $proxies{$name}->$DEFAULT_PROCESSOR(@args);
+                return $proxies{$name}->$PROXIES_PROCESSALL_USING(@args);
             }
         }
 
@@ -402,30 +371,22 @@ sub _dbix_set_err
 
 =head1 IMPORT TAGS AND OPTIONS
 
-=over 2
-
-=item B<:all>
-
-Use this import tag to pull all of the package's exportable symbol table entries
-into the caller's namespace. Currently, only one subroutine (C<callback>) is
-exported upon request.
-
-=item B<-alias>
+=head2 -alias
 
 This option may be used by the caller to select an alias to use for this
 package's unwieldly namespace.
 
-    use DBIx::FlexibleBinding -alias => 'DBIFB';
+    use DBIx::FlexibleBinding -alias => 'DBIF';
 
-    my $dbh = DBIFB->connect('dbi:SQLite:test.db', '', '');
+    my $dbh = DBIF->connect('dbi:SQLite:test.db', '', '');
 
-=item B<-subs>
+=head2 -subs
 
-This option creates special subroutines that may be used to instantiate and
-interact with DBI database handles, and exports those subroutines into the
-caller's namespace at compile time.
+This option may be used to create subroutines, during the compile phase, in
+the caller's namespace to be used as representations of database and statement
+handles.
 
-    use DBIx::FlexibleBinding ':all', -subs => [ 'MyDB' ];
+    use DBIx::FlexibleBinding -subs => [ 'MyDB' ];
 
     # Initialise by passing in a valid set of DBI->connect(...) arguments.
     # The database handle will be the return value.
@@ -457,11 +418,9 @@ caller's namespace at compile time.
         print "$row->{name}\n";
     };
 
-Just be aware that this option automatically relaxes C<strict 'refs'> for the
-remainder of the caller's scope containing the C<use> directive. That is,
-unless C<use strict 'refs'> or C<use strict> appears after that point.
-
-=back
+Use of this option automatically relaxes C<strict 'subs'> for the remainder of
+scope containing the C<use> directive. That is unless C<use strict 'subs'> or
+C<use strict> appears afterwards.
 
 =cut
 
@@ -477,7 +436,7 @@ sub import
 
         if ( substr( $arg, 0, 1 ) eq '-' ) {
             if ( $arg eq '-alias' ) {
-                no strict 'refs';
+                no strict 'refs';    ## no critic [TestingAndDebugging::ProhibitNoStrict]
                 my $package_alias = shift(@args);
                 *{ $package_alias . '::' }     = *{ __PACKAGE__ . '::' };
                 *{ $package_alias . '::db::' } = *{ __PACKAGE__ . '::db::' };
@@ -488,7 +447,7 @@ sub import
                 confess "Expected anonymous list or array reference after '$arg'"
                   unless ref($list) && reftype($list) eq 'ARRAY';
                 for my $proxy_name (@$list) {
-                    no strict 'refs';
+                    no strict 'refs';    ## no critic [TestingAndDebugging::ProhibitNoStrict]
                     my $sub = sub { _proxy( $package, $proxy_name, @_ ) };
                     *{ $caller . '::' . $proxy_name } = subname( $proxy_name => $sub );
                 }
@@ -508,17 +467,9 @@ sub import
 
 =head1 METHODS
 
-=head2 DBIx::FlexibleBinding
-
 =cut
 
-=pod
-
-=over 2
-
-=item B<connect>
-
-=back
+=head2 connect
 
 =cut
 
@@ -540,17 +491,11 @@ use namespace::clean;
 
 our @ISA = 'DBI::db';
 
-=head2 DBIx::FlexibleBinding::db
+=head1 METHODS (C<DBIx::FlexibleBinding::db>)
 
 =cut
 
-=pod
-
-=over 2
-
-=item B<prepare>
-
-=back
+=head2 prepare
 
 =cut
 
@@ -572,27 +517,21 @@ sub prepare
         @params = ( $stmt =~ /\?(\d+)\b/g );
         $stmt =~ s/\?\d+\b/?/g;
     }
-
     my $sth = $dbh->SUPER::prepare( $stmt, @args ) or return;
 
     if (@params) {
-        $sth->{private_auto_binding} = $DBIx::FlexibleBinding::DEFAULT_AUTO_BIND;
+        $sth->{private_auto_binding} = $DBIx::FlexibleBinding::AUTO_BINDING_ENABLED;
         $sth->{private_numeric_placeholders_only} = ( any { /\D/ } @params ) ? 0 : 1;
         $sth->{private_param_counts}              = { map { $_ => 0 } @params };
         $sth->{private_param_order}               = \@params;
         $sth->{private_param_counts}{$_}++ for @params;
     }
 
+    $sth->{private_using_positionals} = !exists( $sth->{private_param_order} );
     return $sth;
 }
 
-=pod
-
-=over 2
-
-=item B<do>
-
-=back
+=head2 do
 
 =cut
 
@@ -608,6 +547,8 @@ sub do
         $sth = $dbh->prepare( $sth, $attr );
     }
 
+    return if $sth->err;
+
     my $result;
 
     if ( $sth->auto_bind() ) {
@@ -618,41 +559,33 @@ sub do
         $result = $sth->execute(@bind_values);
     }
 
-    $result = $callbacks->smart_transform( $_ = $result ) unless $sth->err;
+    return if $sth->err;
+
+    if ($result) {
+        unless ( $sth->err ) {
+            if (@$callbacks) {
+                local $_;
+                $result = $callbacks->smart_transform( $_ = $result );
+            }
+            else {
+                $result = $result;
+            }
+        }
+    }
+
     return $result;
-}
+} ## end sub do
 
-=pod
-
-=over 2
-
-=item B<processrow_arrayref>
+=head2 processrow_arrayref I<(Database Handles)>
 
     my $value = $dbh->processrow_arrayref($statement_handle_or_string,
                                           \%optional_statement_attr,
                                           @optional_data_bindings,
                                           @optional_callbacks);
 
-If the statement is presented as a string then it is first prepared using, if
-present, the optional statement attributes. The statement may also be a pre-
-prepared statement handle.
-
-If auto binding is enabled and there are data bindings, these are bound to their
-respective parameter placeholders and the statement is executed.
-
-The method will then fetch the first and only row, B<initially> presented as an
-array reference, optionally transforming it using a chain of zero or more blocking
-callbacks.
-
-Returns the transformed scalar value.
-
-A transformation stage need not present the transformed data in the same manner
-it was presented, though it is better if a scalar value of some sort is returned.
-
-A transformation stage may eliminate a row from the result set by returning an
-empty list.
-
-=back
+Prepares (if necessary) the statement, executes it with the specified data
+bindings, and fetches one and only one row. Presented B<initially> as an array
+reference, that value may be changed through the use of callbacks.
 
 =cut
 
@@ -661,64 +594,38 @@ sub processrow_arrayref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
 
-    unless ( ref($sth) ) {
+    if ( !ref($sth) ) {
         my $attr;
         $attr = shift(@bind_values)
           if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
-    }
-
-    if ( $sth->auto_bind() ) {
-        $sth->bind(@bind_values);
-        $sth->execute();
+        return if $sth->err;
+        $sth->bind(@bind_values);    # No choice BUT to auto bind when statement
+        $sth->execute();             # is presented as a string!
     }
     else {
-        $sth->execute(@bind_values);
+        if ( $sth->auto_bind() ) {
+            $sth->bind(@bind_values);
+            $sth->execute();
+        }
+        else {
+            $sth->execute(@bind_values);
+        }
     }
 
-    my $result;
-    $result = $sth->fetchrow_arrayref() unless $sth->err;
-    $sth->finish();
-
-    if ($result) {
-        local $_;
-        $result = $callbacks->smart_transform( $_ = [@$result] ) unless $sth->err;
-    }
-
-    return $result;
+    return $sth->processrow_arrayref($callbacks);
 }
 
-=pod
-
-=over 2
-
-=item B<processrow_hashref>
+=head2 processrow_hashref I<(Database Handles)>
 
     my $value = $dbh->processrow_hashref($statement_handle_or_string,
                                          \%optional_statement_attr,
                                          @optional_data_bindings,
                                          @optional_callbacks);
 
-If the statement is presented as a string then it is first prepared using, if
-present, the optional statement attributes. The statement may also be a pre-
-prepared statement handle.
-
-If auto binding is enabled and there are data bindings, these are bound to their
-respective parameter placeholders and the statement is executed.
-
-The method will then fetch the first and only row, B<initially> presented as a
-hash reference, optionally transforming it using a chain of zero or more blocking
-callbacks.
-
-Returns the transformed scalar value.
-
-A transformation stage need not present the transformed data in the same manner
-it was presented, though it is better if a scalar value of some sort is returned.
-
-A transformation stage may eliminate a row from the result set by returning an
-empty list.
-
-=back
+Prepares (if necessary) the statement, executes it with the specified data
+bindings, and fetches one and only one row. Presented B<initially> as a hash
+reference, that value may be changed through the use of callbacks.
 
 =cut
 
@@ -727,38 +634,29 @@ sub processrow_hashref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
 
-    unless ( ref($sth) ) {
+    if ( !ref($sth) ) {
         my $attr;
         $attr = shift(@bind_values)
           if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
-    }
-
-    if ( $sth->auto_bind() ) {
-        $sth->bind(@bind_values);
-        $sth->execute();
+        return if $sth->err;
+        $sth->bind(@bind_values);    # No choice BUT to auto bind when statement
+        $sth->execute();             # is presented as a string!
     }
     else {
-        $sth->execute(@bind_values);
+        if ( $sth->auto_bind() ) {
+            $sth->bind(@bind_values);
+            $sth->execute();
+        }
+        else {
+            $sth->execute(@bind_values);
+        }
     }
 
-    my $result;
-    $result = $sth->fetchrow_hashref() unless $sth->err;
-    $sth->finish();
-
-    if ($result) {
-        local $_;
-        $result = $callbacks->smart_transform( $_ = {%$result} ) unless $sth->err;
-    }
-
-    return $result;
+    return $sth->processrow_hashref($callbacks);
 }
 
-=pod
-
-=over 2
-
-=item B<processall_arrayref>
+=head2 processall_arrayref I<(Database Handles)>
 
     my $array_of_values = $dbh->processall_arrayref($statement_handle_or_string,
                                                     \%optional_statement_attr,
@@ -770,27 +668,10 @@ sub processrow_hashref
                                                     @optional_data_bindings,
                                                     @optional_callbacks);
 
-If the statement is presented as a string then it is first prepared using, if
-present, the optional statement attributes. The statement may also be a pre-
-prepared statement handle.
-
-If auto binding is enabled and there are data bindings, these are bound to their
-respective parameter placeholders and the statement is executed.
-
-The method will then fetch the entire result set, B<initially> presenting rows
-as array references, optionally transforming each rows using a chain of zero or
-more blocking callbacks.
-
-Returns the transformed result set as a reference to an array or as a list
-depending on calling context.
-
-A transformation stage need not present the transformed data in the same manner
-it was presented, though it is better if a scalar value of some sort is returned.
-
-A transformation stage may eliminate a row from the result set by returning an
-empty list.
-
-=back
+Prepares (if necessary) the statement, executes it with the specified data
+bindings, and fetches all the rows in the result set. Presented B<initially> as
+an array reference, the value of each row may be changed through the use of
+callbacks.
 
 =cut
 
@@ -799,38 +680,29 @@ sub processall_arrayref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
 
-    unless ( ref($sth) ) {
+    if ( !ref($sth) ) {
         my $attr;
         $attr = shift(@bind_values)
           if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
-    }
-
-    if ( $sth->auto_bind() ) {
-        $sth->bind(@bind_values);
-        $sth->execute();
+        return if $sth->err;
+        $sth->bind(@bind_values);    # No choice BUT to auto bind when statement
+        $sth->execute();             # is presented as a string!
     }
     else {
-        $sth->execute(@bind_values);
+        if ( $sth->auto_bind() ) {
+            $sth->bind(@bind_values);
+            $sth->execute();
+        }
+        else {
+            $sth->execute(@bind_values);
+        }
     }
 
-    my $result;
-    $result = $sth->fetchall_arrayref() unless $sth->err;
-
-    if ($result) {
-        local $_;
-        $result = [ map { $callbacks->transform($_) } @$result ] unless $sth->err;
-    }
-
-    return $result unless defined $result;
-    return wantarray ? @$result : $result;
+    return $sth->processall_arrayref($callbacks);
 }
 
-=pod
-
-=over 2
-
-=item B<processall_hashref>
+=head2 processall_hashref I<(Database Handles)>
 
     my $array_of_values = $dbh->processall_hashref($statement_handle_or_string,
                                                    \%optional_statement_attr,
@@ -842,27 +714,10 @@ sub processall_arrayref
                                                    @optional_data_bindings,
                                                    @optional_callbacks);
 
-If the statement is presented as a string then it is first prepared using, if
-present, the optional statement attributes. The statement may also be a pre-
-prepared statement handle.
-
-If auto binding is enabled and there are data bindings, these are bound to their
-respective parameter placeholders and the statement is executed.
-
-The method will then fetch the entire result set, B<initially> presenting rows
-as hash references, optionally transforming each rows using a chain of zero or
-more blocking callbacks.
-
-Returns the transformed result set as a reference to an array or as a list
-depending on calling context.
-
-A transformation stage need not present the transformed data in the same manner
-it was presented, though it is better if a scalar value of some sort is returned.
-
-A transformation stage may eliminate a row from the result set by returning an
-empty list.
-
-=back
+Prepares (if necessary) the statement, executes it with the specified data
+bindings, and fetches all the rows in the result set. Presented B<initially> as
+a hash reference, the value of each row may be changed through the use of
+callbacks.
 
 =cut
 
@@ -871,31 +726,26 @@ sub processall_hashref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
 
-    unless ( ref($sth) ) {
+    if ( !ref($sth) ) {
         my $attr;
         $attr = shift(@bind_values)
           if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
-    }
-
-    if ( $sth->auto_bind() ) {
-        $sth->bind(@bind_values);
-        $sth->execute();
+        return if $sth->err;
+        $sth->bind(@bind_values);    # No choice BUT to auto bind when statement
+        $sth->execute();             # is presented as a string!
     }
     else {
-        $sth->execute(@bind_values);
+        if ( $sth->auto_bind() ) {
+            $sth->bind(@bind_values);
+            $sth->execute();
+        }
+        else {
+            $sth->execute(@bind_values);
+        }
     }
 
-    my $result;
-    $result = $sth->fetchall_arrayref( {} ) unless $sth->err;
-
-    if ($result) {
-        local $_;
-        $result = [ map { $callbacks->transform($_) } @$result ] unless $sth->err;
-    }
-
-    return $result unless defined $result;
-    return wantarray ? @$result : $result;
+    return $sth->processall_hashref($callbacks);
 }
 
 package    # Hide from PAUSE
@@ -932,17 +782,17 @@ sub _bind_hash_ref
     return $sth;
 }
 
-=head2 DBIx::FlexibleBinding::st
+=head1 METHODS (C<DBIx::FlexibleBinding::st>)
 
 =cut
 
-=pod
+=head2 auto_bind
 
-=over 2
+    $sth->auto_bind($boolean);
+    $state = $sth->auto_bind();
 
-=item B<auto_bind>
-
-=back
+Use this method to enable, disable or inspect the current state of auto_binding
+for a particular statement handle.
 
 =cut
 
@@ -956,26 +806,15 @@ sub auto_bind
         return $sth;
     }
 
-    return $sth->{private_auto_binding};
+    return $sth->{private_auto_binding} && !$sth->{private_using_positionals};
 }
-
-=pod
-
-=over 2
-
-=item B<bind>
-
-=back
-
-=cut
 
 
 sub bind
 {
     my ( $sth, @args ) = @_;
     return $sth unless @args;
-
-    return $sth->_bind_array_ref( \@args ) unless @{ $sth->{private_param_order} };
+    return $sth->_bind_array_ref( \@args ) if $sth->{private_using_positionals};
 
     my $ref = ( @args == 1 ) && reftype( $args[0] );
 
@@ -1012,16 +851,6 @@ sub bind
     return $sth;
 } ## end sub bind
 
-=pod
-
-=over 2
-
-=item B<bind_param>
-
-=back
-
-=cut
-
 
 sub bind_param
 {
@@ -1034,7 +863,7 @@ sub bind_param
       if $param =~ /[^\@\w]/;
 
     return $sth->SUPER::bind_param( $param, $value, $attr )
-      unless @{ $sth->{private_param_order} };
+      if $sth->{private_using_positionals};
 
     my $bind_rv = undef;
     my $pos     = 0;
@@ -1052,16 +881,6 @@ sub bind_param
 
     return $bind_rv;
 }
-
-=pod
-
-=over 2
-
-=item B<execute>
-
-=back
-
-=cut
 
 
 sub execute
@@ -1088,13 +907,12 @@ sub execute
     return ( $rows == 0 ) ? '0E0' : $rows;
 }
 
-=pod
+=head2 processrow_arrayref I<(Statement Handles)>
 
-=over 2
+    my $value = $sth->processrow_arrayref(@optional_callbacks);
 
-=item B<processrow_arrayref>
-
-=back
+Fetches the next row of a result set if one exists. Presented B<initially>
+as an array reference the row may be transformed through the use of callbacks.
 
 =cut
 
@@ -1105,21 +923,26 @@ sub processrow_arrayref
     my $result = $sth->fetchrow_arrayref();
 
     if ($result) {
-        local $_;
-        $result = $callbacks->smart_transform( $_ = [@$result] ) unless $sth->err;
+        unless ( $sth->err ) {
+            $result = [@$result];
+
+            if (@$callbacks) {
+                local $_;
+                $result = $callbacks->smart_transform( $_ = $result );
+            }
+        }
     }
 
     return $result;
 }
 
 
-=pod
+=head2 processrow_hashref I<(Statement Handles)>
 
-=over 2
+    my $value = $sth->processrow_hashref(@optional_callbacks);
 
-=item B<processrow_hashref>
-
-=back
+Fetches the next row of a result set if one exists. Presented B<initially>
+as a hash reference the row may be transformed through the use of callbacks.
 
 =cut
 
@@ -1130,20 +953,25 @@ sub processrow_hashref
     my $result = $sth->fetchrow_hashref();
 
     if ($result) {
-        local $_;
-        $result = $callbacks->smart_transform( $_ = {%$result} ) unless $sth->err;
+        unless ( $sth->err ) {
+            if (@$callbacks) {
+                local $_;
+                $result = $callbacks->smart_transform( $_ = $result );
+            }
+        }
     }
 
     return $result;
 }
 
-=pod
+=head2 processall_arrayref I<(Statement Handles)>
 
-=over 2
+    my $array_of_values = $sth->processall_arrayref(@optional_callbacks);
 
-=item B<processall_arrayref>
+    my @array_of_values = $sth->processall_arrayref(@optional_callbacks);
 
-=back
+Fetches the entire result set. Presented B<initially> as array references rows
+may be transformed through the use of callbacks.
 
 =cut
 
@@ -1154,21 +982,26 @@ sub processall_arrayref
     my $result = $sth->fetchall_arrayref();
 
     if ($result) {
-        local $_;
-        $result = [ map { $callbacks->transform($_) } @$result ] unless $sth->err;
+        unless ( $sth->err ) {
+            if (@$callbacks) {
+                local $_;
+                $result = [ map { $callbacks->transform($_) } @$result ];
+            }
+        }
     }
 
     return $result unless defined $result;
     return wantarray ? @$result : $result;
 }
 
-=pod
+=head2 processall_hashref I<(Statement Handles)>
 
-=over 2
+    my $array_of_values = $sth->processall_hashref(@optional_callbacks);
 
-=item B<processall_hashref>
+    my @array_of_values = $sth->processall_hashref(@optional_callbacks);
 
-=back
+Fetches the entire result set. Presented B<initially> as hash references rows
+may be transformed through the use of callbacks.
 
 =cut
 
@@ -1179,8 +1012,12 @@ sub processall_hashref
     my $result = $sth->fetchall_arrayref( {} );
 
     if ($result) {
-        local $_;
-        $result = [ map { $callbacks->transform($_) } @$result ] unless $sth->err;
+        unless ( $sth->err ) {
+            if (@$callbacks) {
+                local $_;
+                $result = [ map { $callbacks->transform($_) } @$result ];
+            }
+        }
     }
 
     return $result unless defined $result;
@@ -1191,29 +1028,18 @@ sub processall_hashref
 
 =head1 EXPORTS
 
-The following symbols are exported when requested by name or through the
-use of the C<:all> tag.
+The following symbols are exported by default:
 
-=over 2
+=head2 callback
 
-=item B<callback>
-
-A simple piece of syntactic sugar that announces a callback. The code
-reference it precedes is blessed as a C<Params::Callbacks::Callback>
-object, disambiguating it from unblessed subs that are being passed as
-standard arguments.
-
-Multiple callbacks may be chained together with or without comma
-separators:
-
-    callback { ... }, callback { ... }  # Valid
-    callback { ... }  callback { ... }  # Valid, too!
-
-=back
-
-There are no automatic exports.
+To enable the namespace using this module to take advantage of the callbacks,
+which are one of its main features, without the unnecessary burden of also
+including the module that provides the feature I<(see L<Params::Callbacks> for
+more detailed information)>.
 
 =cut
+
+=pod
 
 =head1 AUTHOR
 
@@ -1221,7 +1047,7 @@ Iain Campbell, C<< <cpanic at cpan.org> >>
 
 =head1 REPOSITORY
 
-L<https://github.com/cpanic/DBIx-FlexibleBinding>
+L<DBIx-FlexibleBinding at GitHub|https://github.com/cpanic/DBIx-FlexibleBinding>
 
 =head1 BUGS
 
