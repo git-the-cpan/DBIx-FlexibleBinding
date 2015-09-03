@@ -293,7 +293,7 @@ use Sub::Name;
 use namespace::clean;
 use Params::Callbacks 'callback';
 
-our $VERSION = '0.001005';
+our $VERSION = '0.001006';
 our @ISA     = ( 'DBI', 'Exporter' );
 our @EXPORT  = qw(callback);
 
@@ -366,7 +366,7 @@ sub _dbix_set_err
         }
 
         return $proxies{$name};
-    } ## end sub _proxy
+    }
 }
 
 =head1 IMPORT TAGS AND OPTIONS
@@ -463,13 +463,26 @@ sub import
     }
 
     goto &Exporter::import;
-} ## end sub import
+}
 
 =head1 METHODS
 
 =cut
 
 =head2 connect
+
+    $dbh = DBIx::FlexibleBinding->connect($data_source, $username, $password);
+    $dbh = DBIx::FlexibleBinding->connect($data_source, 
+                                          $username, 
+                                          $password, 
+                                          \%attr);
+
+Establishes a database connection, or session, to the requested data_source and
+returns a database handle object if the connection succeeds or undef if it does
+not.
+
+I<Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#connect> for a more detailed
+explanation of how to use this method>.
 
 =cut
 
@@ -495,7 +508,68 @@ our @ISA = 'DBI::db';
 
 =cut
 
+=head2 do
+
+    $rows = $dbh->do($statement_string);
+    $rows = $dbh->do($statement_string, \%attr);
+    $rows = $dbh->do($statement_string, \%attr, @bind_values);
+
+    $rows = $dbh->do($statement_handle);
+    $rows = $dbh->do($statement_handle, @bind_values);
+
+
+Prepare if necessary and execute a single statement. Returns the number of rows
+affected or undef on error. A return value of -1 means the number of rows is not
+known, not applicable, or not available.
+
+I<Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#do> for a more detailed
+explanation of how to use this method>.
+
+=cut
+
+
+sub do
+{
+    my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
+
+    if ( !ref($sth) ) {
+        my $attr;
+        $attr = shift(@bind_values)
+          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
+        $sth = $dbh->prepare( $sth, $attr );
+        return if $sth->err;
+    }
+
+    return if $sth->err;
+
+    my $result = $sth->execute(@bind_values);
+
+    return if $sth->err;
+
+    if ($result) {
+        if (@$callbacks) {
+            local $_;
+            $result = $callbacks->smart_transform( $_ = $result );
+        }
+        else {
+            $result = $result;
+        }
+    }
+
+    return $result;
+}
+
+
 =head2 prepare
+
+    $sth = $dbh->prepare($statement_string);
+    $sth = $dbh->prepare($statement_string, \%attr);
+
+Prepares a statement for later execution by the database engine and returns a
+reference to a statement handle object.
+
+I<Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#prepare> for a more detailed
+explanation of how to use this method>.
 
 =cut
 
@@ -531,147 +605,34 @@ sub prepare
     return $sth;
 }
 
-=head2 do
-
-=cut
-
-
-sub do
-{
-    my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
-
-    unless ( ref($sth) ) {
-        my $attr;
-        $attr = shift(@bind_values)
-          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
-        $sth = $dbh->prepare( $sth, $attr );
-    }
-
-    return if $sth->err;
-
-    my $result;
-
-    if ( $sth->auto_bind() ) {
-        $sth->bind(@bind_values);
-        $result = $sth->execute();
-    }
-    else {
-        $result = $sth->execute(@bind_values);
-    }
-
-    return if $sth->err;
-
-    if ($result) {
-        unless ( $sth->err ) {
-            if (@$callbacks) {
-                local $_;
-                $result = $callbacks->smart_transform( $_ = $result );
-            }
-            else {
-                $result = $result;
-            }
-        }
-    }
-
-    return $result;
-} ## end sub do
-
-=head2 processrow_arrayref I<(Database Handles)>
-
-    my $value = $dbh->processrow_arrayref($statement_handle_or_string,
-                                          \%optional_statement_attr,
-                                          @optional_data_bindings,
-                                          @optional_callbacks);
-
-Prepares (if necessary) the statement, executes it with the specified data
-bindings, and fetches one and only one row. Presented B<initially> as an array
-reference, that value may be changed through the use of callbacks.
-
-=cut
-
-
-sub processrow_arrayref
-{
-    my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
-
-    if ( !ref($sth) ) {
-        my $attr;
-        $attr = shift(@bind_values)
-          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
-        $sth = $dbh->prepare( $sth, $attr );
-        return if $sth->err;
-        $sth->bind(@bind_values);    # No choice BUT to auto bind when statement
-        $sth->execute();             # is presented as a string!
-    }
-    else {
-        if ( $sth->auto_bind() ) {
-            $sth->bind(@bind_values);
-            $sth->execute();
-        }
-        else {
-            $sth->execute(@bind_values);
-        }
-    }
-
-    return $sth->processrow_arrayref($callbacks);
-}
-
-=head2 processrow_hashref I<(Database Handles)>
-
-    my $value = $dbh->processrow_hashref($statement_handle_or_string,
-                                         \%optional_statement_attr,
-                                         @optional_data_bindings,
-                                         @optional_callbacks);
-
-Prepares (if necessary) the statement, executes it with the specified data
-bindings, and fetches one and only one row. Presented B<initially> as a hash
-reference, that value may be changed through the use of callbacks.
-
-=cut
-
-
-sub processrow_hashref
-{
-    my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
-
-    if ( !ref($sth) ) {
-        my $attr;
-        $attr = shift(@bind_values)
-          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
-        $sth = $dbh->prepare( $sth, $attr );
-        return if $sth->err;
-        $sth->bind(@bind_values);    # No choice BUT to auto bind when statement
-        $sth->execute();             # is presented as a string!
-    }
-    else {
-        if ( $sth->auto_bind() ) {
-            $sth->bind(@bind_values);
-            $sth->execute();
-        }
-        else {
-            $sth->execute(@bind_values);
-        }
-    }
-
-    return $sth->processrow_hashref($callbacks);
-}
 
 =head2 processall_arrayref I<(Database Handles)>
 
-    my $array_of_values = $dbh->processall_arrayref($statement_handle_or_string,
-                                                    \%optional_statement_attr,
-                                                    @optional_data_bindings,
-                                                    @optional_callbacks);
+    $array_of_values = $dbh->processall_arrayref($statement_string,
+                                                 \%optional_attr,
+                                                 @optional_data_bindings,
+                                                 @optional_callbacks);
 
-    my @array_of_values = $dbh->processall_arrayref($statement_handle_or_string,
-                                                    \%optional_statement_attr,
-                                                    @optional_data_bindings,
-                                                    @optional_callbacks);
+    @array_of_values = $dbh->processall_arrayref($statement_string,
+                                                 \%optional_attr,
+                                                 @optional_data_bindings,
+                                                 @optional_callbacks);
 
-Prepares (if necessary) the statement, executes it with the specified data
-bindings, and fetches all the rows in the result set. Presented B<initially> as
-an array reference, the value of each row may be changed through the use of
-callbacks.
+    $array_of_values = $dbh->processall_arrayref($statement_handle,
+                                                 @optional_data_bindings,
+                                                 @optional_callbacks);
+
+    @array_of_values = $dbh->processall_arrayref($statement_handle,
+                                                 @optional_data_bindings,
+                                                 @optional_callbacks);
+
+Prepares the statement if necessary, executes it with the specified data
+bindings, and fetches all the rows in the result set.
+
+Though presented initially as an array reference, the value of each row may be
+transformed, by the caller, with the aid of callbacks.
+
+
 
 =cut
 
@@ -686,38 +647,39 @@ sub processall_arrayref
           if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
         return if $sth->err;
-        $sth->bind(@bind_values);    # No choice BUT to auto bind when statement
-        $sth->execute();             # is presented as a string!
-    }
-    else {
-        if ( $sth->auto_bind() ) {
-            $sth->bind(@bind_values);
-            $sth->execute();
-        }
-        else {
-            $sth->execute(@bind_values);
-        }
     }
 
+    $sth->execute(@bind_values);
+
+    return if $sth->err;
     return $sth->processall_arrayref($callbacks);
 }
 
 =head2 processall_hashref I<(Database Handles)>
 
-    my $array_of_values = $dbh->processall_hashref($statement_handle_or_string,
-                                                   \%optional_statement_attr,
-                                                   @optional_data_bindings,
-                                                   @optional_callbacks);
+    $array_of_values = $dbh->processall_hashref($statement_string,
+                                                \%optional_attr,
+                                                @optional_data_bindings,
+                                                @optional_callbacks);
 
-    my @array_of_values = $dbh->processall_hashref($statement_handle_or_string,
-                                                   \%optional_statement_attr,
-                                                   @optional_data_bindings,
-                                                   @optional_callbacks);
+    @array_of_values = $dbh->processall_hashref($statement_string,
+                                                \%optional_attr,
+                                                @optional_data_bindings,
+                                                @optional_callbacks);
 
-Prepares (if necessary) the statement, executes it with the specified data
-bindings, and fetches all the rows in the result set. Presented B<initially> as
-a hash reference, the value of each row may be changed through the use of
-callbacks.
+    $array_of_values = $dbh->processall_hashref($statement_handle,
+                                                @optional_data_bindings,
+                                                @optional_callbacks);
+
+    @array_of_values = $dbh->processall_hashref($statement_handle,
+                                                @optional_data_bindings,
+                                                @optional_callbacks);
+
+Prepares the statement if necessary, executes it with the specified data
+bindings, and fetches all the rows in the result set.
+
+Though presented initially as a hash reference, the value of each row may be
+transformed, by the caller, with the aid of callbacks.
 
 =cut
 
@@ -732,20 +694,88 @@ sub processall_hashref
           if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
         return if $sth->err;
-        $sth->bind(@bind_values);    # No choice BUT to auto bind when statement
-        $sth->execute();             # is presented as a string!
-    }
-    else {
-        if ( $sth->auto_bind() ) {
-            $sth->bind(@bind_values);
-            $sth->execute();
-        }
-        else {
-            $sth->execute(@bind_values);
-        }
     }
 
+    $sth->execute(@bind_values);
+
+    return if $sth->err;
     return $sth->processall_hashref($callbacks);
+}
+
+=head2 processrow_arrayref I<(Database Handles)>
+
+    $value = $dbh->processrow_arrayref($statement_string,
+                                       \%optional_attr,
+                                       @optional_data_bindings,
+                                       @optional_callbacks);
+
+    $value = $dbh->processrow_arrayref($statement_handle,
+                                       @optional_data_bindings,
+                                       @optional_callbacks);
+
+Prepares the statement (if necessary) and executes it immediately with the
+specified data bindings, and fetches one and only one row.
+
+Though presented initially as an array reference, the value of that row may be
+transformed, by the caller, with the aid of callbacks.
+
+=cut
+
+
+sub processrow_arrayref
+{
+    my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
+
+    if ( !ref($sth) ) {
+        my $attr;
+        $attr = shift(@bind_values)
+          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
+        $sth = $dbh->prepare( $sth, $attr );
+        return if $sth->err;
+    }
+
+    $sth->execute(@bind_values);
+
+    return if $sth->err;
+    return $sth->processrow_arrayref($callbacks);
+}
+
+=head2 processrow_hashref I<(Database Handles)>
+
+    $value = $dbh->processrow_hashref($statement_string,
+                                      \%optional_attr,
+                                      @optional_data_bindings,
+                                      @optional_callbacks);
+
+    $value = $dbh->processrow_hashref($statement_handle,
+                                      @optional_data_bindings,
+                                      @optional_callbacks);
+
+Prepares the statement (if necessary) and executes it immediately with the
+specified data bindings, and fetches one and only one row.
+
+Though presented initially as a hash reference, that value of that row may be
+transformed , by the caller, with the aid of callbacks.
+
+=cut
+
+
+sub processrow_hashref
+{
+    my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
+
+    if ( !ref($sth) ) {
+        my $attr;
+        $attr = shift(@bind_values)
+          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
+        $sth = $dbh->prepare( $sth, $attr );
+        return if $sth->err;
+    }
+
+    $sth->execute(@bind_values);
+
+    return if $sth->err;
+    return $sth->processrow_hashref($callbacks);
 }
 
 package    # Hide from PAUSE
@@ -791,8 +821,8 @@ sub _bind_hash_ref
     $sth->auto_bind($boolean);
     $state = $sth->auto_bind();
 
-Use this method to enable, disable or inspect the current state of auto_binding
-for a particular statement handle.
+Use this method to enable, disable or inspect the current state of automatic
+binding for a particular statement handle.
 
 =cut
 
@@ -800,14 +830,44 @@ for a particular statement handle.
 sub auto_bind
 {
     my ( $sth, $bool ) = @_;
-
     if ( @_ > 1 ) {
         $sth->{private_auto_binding} = $bool ? 1 : 0;
         return $sth;
     }
 
-    return $sth->{private_auto_binding} && !$sth->{private_using_positionals};
+    return $sth->{private_auto_binding};
 }
+
+=head2 bind
+
+    $sth->bind(@bind_values);       # For positional and numeric placeholders
+    $sth->bind(\@bind_values);      # For positional and numeric placeholders
+    $sth->bind(%bind_values);       # For numeric and named placeholders
+    $sth->bind(\%bind_values);      # For numeric and named placeholders
+    $sth->bind([%bind_values]);     # For numeric and named placeholders
+
+The bind method associates (binds) the values supplied in the parameter list with
+the placeholders embedded in the prepared statement.
+
+With automatic binding enabled (and it is by default), any operation that results
+in a subsequent call to the C<execute> method will almost certainly complete any
+parameter binding automatically using this method.
+
+With automatic binding disabled, this method will not be called at all and the
+execute method will almost dutifully convey bind values as they are presented up
+the DBI inheritance chain to the handler's execute method. I<Almost dutifully>
+because a lone array reference will be de-referenced and passed up as a list. The
+general assumption here is that you won't present any bind values because the hard
+work of doing the C<bind_param> calls has already been done, or a manual call to
+the C<bind> method has already taken place.
+
+In any case, it's pretty hard to screw-up when relying on this method to bind
+your data values. Provided that what you present can be interpreted as a list of
+values for positional placeholders, a list of key-value pairs for named
+placeholders, or either for numeric placeholders, then you'll be absolutely
+fine.
+
+=cut
 
 
 sub bind
@@ -849,13 +909,32 @@ sub bind
     }
 
     return $sth;
-} ## end sub bind
+}
+
+
+=head2 bind_param
+
+    $sth->bind_param($param_num, $bind_value)
+    $sth->bind_param($param_num, $bind_value, \%attr)
+    $sth->bind_param($param_num, $bind_value, $bind_type)
+
+    $sth->bind_param($param_name, $bind_value)
+    $sth->bind_param($param_name, $bind_value, \%attr)
+    $sth->bind_param($param_name, $bind_value, $bind_type)
+
+The bind_param method associates (binds) a value to a placeholder embedded in the
+prepared statement.
+
+I<Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#bind_param> for a more detailed
+explanation of how to use this method>.
+
+
+=cut
 
 
 sub bind_param
 {
     my ( $sth, $param, $value, $attr ) = @_;
-
     return _dbix_set_err( $sth, "Binding identifier is missing" )
       unless defined($param) && $param;
 
@@ -882,13 +961,27 @@ sub bind_param
     return $bind_rv;
 }
 
+=head2 execute
+
+    $rv = $sth->execute;
+    $rv = $sth->execute(@bind_values);
+
+Perform whatever processing is necessary to execute the prepared statement. An
+undef is returned if an error occurs. A successful execute always returns true
+regardless of the number of rows affected, even if it's zero.
+
+I<Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#execute> for a more detailed
+explanation of how to use this method>.
+
+=cut
+
 
 sub execute
 {
     my ( $sth, @bind_values ) = @_;
     my $rows;
 
-    if ( $sth->auto_bind() ) {
+    if ( $sth->{private_auto_binding} ) {
         $sth->bind(@bind_values);
         $rows = $sth->SUPER::execute();
     }
@@ -907,12 +1000,77 @@ sub execute
     return ( $rows == 0 ) ? '0E0' : $rows;
 }
 
+=head2 processall_arrayref I<(Statement Handles)>
+
+    $array_of_values = $sth->processall_arrayref(@optional_callbacks);
+    @array_of_values = $sth->processall_arrayref(@optional_callbacks);
+
+Fetches the entire result set.
+
+Though presented initially as an array reference, the value of each row may be
+transformed, by the caller, with the aid of callbacks.
+
+=cut
+
+
+sub processall_arrayref
+{
+    my ( $callbacks, $sth ) = &callbacks;
+    my $result = $sth->fetchall_arrayref();
+
+    if ($result) {
+        unless ( $sth->err ) {
+            if (@$callbacks) {
+                local $_;
+                $result = [ map { $callbacks->transform($_) } @$result ];
+            }
+        }
+    }
+
+    return $result unless defined $result;
+    return wantarray ? @$result : $result;
+}
+
+=head2 processall_hashref I<(Statement Handles)>
+
+    $array_of_values = $sth->processall_hashref(@optional_callbacks);
+    @array_of_values = $sth->processall_hashref(@optional_callbacks);
+
+Fetches the entire result set.
+
+Though presented initially as an hash reference, the value of each row may be
+transformed, by the caller, with the aid of callbacks.
+
+=cut
+
+
+sub processall_hashref
+{
+    my ( $callbacks, $sth ) = &callbacks;
+    my $result = $sth->fetchall_arrayref( {} );
+
+    if ($result) {
+        unless ( $sth->err ) {
+            if (@$callbacks) {
+                local $_;
+                $result = [ map { $callbacks->transform($_) } @$result ];
+            }
+        }
+    }
+
+    return $result unless defined $result;
+    return wantarray ? @$result : $result;
+}
+
 =head2 processrow_arrayref I<(Statement Handles)>
 
-    my $value = $sth->processrow_arrayref(@optional_callbacks);
+    $value = $sth->processrow_arrayref(@optional_callbacks);
 
-Fetches the next row of a result set if one exists. Presented B<initially>
-as an array reference the row may be transformed through the use of callbacks.
+Fetches the next row of a result set if one exists.
+
+Though presented initially as an array reference, the value of that row may be
+transformed, by the caller, with the aid of callbacks.
+
 
 =cut
 
@@ -939,10 +1097,13 @@ sub processrow_arrayref
 
 =head2 processrow_hashref I<(Statement Handles)>
 
-    my $value = $sth->processrow_hashref(@optional_callbacks);
+    $value = $sth->processrow_hashref(@optional_callbacks);
 
-Fetches the next row of a result set if one exists. Presented B<initially>
-as a hash reference the row may be transformed through the use of callbacks.
+Fetches the next row of a result set if one exists.
+
+Though presented initially as an hash reference, the value of that row may be
+transformed, by the caller, with the aid of callbacks.
+
 
 =cut
 
@@ -962,66 +1123,6 @@ sub processrow_hashref
     }
 
     return $result;
-}
-
-=head2 processall_arrayref I<(Statement Handles)>
-
-    my $array_of_values = $sth->processall_arrayref(@optional_callbacks);
-
-    my @array_of_values = $sth->processall_arrayref(@optional_callbacks);
-
-Fetches the entire result set. Presented B<initially> as array references rows
-may be transformed through the use of callbacks.
-
-=cut
-
-
-sub processall_arrayref
-{
-    my ( $callbacks, $sth ) = &callbacks;
-    my $result = $sth->fetchall_arrayref();
-
-    if ($result) {
-        unless ( $sth->err ) {
-            if (@$callbacks) {
-                local $_;
-                $result = [ map { $callbacks->transform($_) } @$result ];
-            }
-        }
-    }
-
-    return $result unless defined $result;
-    return wantarray ? @$result : $result;
-}
-
-=head2 processall_hashref I<(Statement Handles)>
-
-    my $array_of_values = $sth->processall_hashref(@optional_callbacks);
-
-    my @array_of_values = $sth->processall_hashref(@optional_callbacks);
-
-Fetches the entire result set. Presented B<initially> as hash references rows
-may be transformed through the use of callbacks.
-
-=cut
-
-
-sub processall_hashref
-{
-    my ( $callbacks, $sth ) = &callbacks;
-    my $result = $sth->fetchall_arrayref( {} );
-
-    if ($result) {
-        unless ( $sth->err ) {
-            if (@$callbacks) {
-                local $_;
-                $result = [ map { $callbacks->transform($_) } @$result ];
-            }
-        }
-    }
-
-    return $result unless defined $result;
-    return wantarray ? @$result : $result;
 }
 
 1;
