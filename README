@@ -2,7 +2,7 @@ NAME
     DBIx::FlexibleBinding - Flexible parameter binding and record fetching
 
 VERSION
-    version 1.152461
+    version 1.152460
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of

@@ -1,5 +1,5 @@
 package DBIx::FlexibleBinding;
-BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152461'; }
+BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152460'; }
 =pod
 
 =head1 NAME
@@ -8,7 +8,7 @@ DBIx::FlexibleBinding - Flexible parameter binding and record fetching
 
 =head1 VERSION
 
-version 1.152461
+version 1.152460
 
 =head1 SYNOPSIS
 

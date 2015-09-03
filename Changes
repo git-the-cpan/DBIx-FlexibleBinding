@@ -1,3 +1,5 @@
+1.152460  2015-09-03 21:55:46+01:00 Europe/London
+
 1.152461  2015-09-03 21:02:06+01:00 Europe/London
 
     Module now managed using Dist::Zilla and version numbers are auto generated
