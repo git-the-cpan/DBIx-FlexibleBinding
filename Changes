@@ -1,5 +1,3 @@
-Revision history for DBIx-FlexibleBinding
+1.152461  2015-09-03 21:02:06+01:00 Europe/London
 
-0.01    Date/time
-        First version, released on an unsuspecting world.
-
+    Module now managed using Dist::Zilla and version numbers are auto generated

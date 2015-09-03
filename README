@@ -1,81 +1,616 @@
-DBIx-FlexibleBinding
+NAME
+    DBIx::FlexibleBinding - Flexible parameter binding and record fetching
 
-A DBI subclass that implements the following features:
+VERSION
+    version 1.152461
 
-    Support for multiple parameter placeholder schemes
-        * Standard positional placeholders (?)
-        * Numeric placeholders (:1 and ?1)
-        * Named placeholders (:NAME and @NAME)
-    
-    Flexible argument list binding mechanisms
-        * (list of values) and [list of values] for positional.
-          placeholders.
-        * (list of values) and [list of values] for numeric placeholders.
-        * (list of key-value pairs), [list of key-value pairs] and 
-          {list of key-value pairs} for named placeholders.
-        
-    Automatic binding dependant on disposition of placeholders
-    
-    Additional statement methods supporting fetching and processing 
-    using callbacks
-        * $sth->processrow_arrayref(CALLBACKS)
-        * $sth->processrow_hashref(CALLBACKS)
-        * $sth->processall_arrayref(CALLBACKS)
-        * $sth->processall_hashref(CALLBACKS)
-        
-    Additional database methods supporting preparation, execution, fetching 
-    and processing using callbacks
-        * $dbh->processrow_arrayref(STATEMENT, ATTRS, BINDINGS, CALLBACKS)
-        * $dbh->processrow_hashref(STATEMENT, ATTRS, BINDINGS, CALLBACKS)
-        * $dbh->processall_arrayref(STATEMENT, ATTRS, BINDINGS, CALLBACKS)
-        * $dbh->processall_hashref(STATEMENT, ATTRS, BINDINGS, CALLBACKS)
-        
-INSTALLATION
+SYNOPSIS
+    This module extends the DBI allowing you choose from a variety of
+    supported parameter placeholder and binding patterns as well as offering
+    simplified ways to interact with datasources, while improving general
+    readability.
 
-To install this module, run the following commands:
+        #########################################################
+        # SCENARIO 1                                            #
+        # A connect followed by a prepare-execute-process cycle #
+        #########################################################
 
-	perl Makefile.PL
-	make
-	make test
-	make install
+        use DBIx::FlexibleBinding;
+        use constant DSN => 'dbi:mysql:test;host=127.0.0.1';
+        use constant SQL => << '//';
+        SELECT solarSystemName AS name
+          FROM mapsolarsystems
+         WHERE regional  = :is_regional
+           AND security >= :minimum_security
+        //
 
-SUPPORT AND DOCUMENTATION
+        # Pretty standard connect, just with the new DBI subclass ...
+        #
+        my $dbh = DBIx::FlexibleBinding->connect(DSN, '', '', { RaiseError => 1 });
 
-After installing, you can find documentation for this module with the
-perldoc command.
+        # Prepare statement using named placeholders (not bad for MySQL, eh) ...
+        #
+        my $sth = $dbh->prepare(SQL);
 
-    perldoc DBIx::FlexibleBinding
+        # Execute the statement (parameter binding is automatic) ...
+        #
+        my $rv = $sth->execute(is_regional => 1,
+                               minimum_security => 1.0);
 
-You can also look for information at:
+        # Fetch and transform rows with a blocking callback to get only the data you
+        # want without cluttering the place up with intermediate state ...
+        #
+        my @system_names = $sth->processall_hashref(callback { $_->{name} });
 
-    RT, CPAN's request tracker (report bugs here)
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=DBIx-FlexibleBinding
+        ############################################################################
+        # SCENARIO 2                                                               #
+        # Let's simplify the previous scenario using the database handle's version #
+        # of that processall_hashref method.                                       #
+        ############################################################################
 
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/DBIx-FlexibleBinding
+        use DBIx::FlexibleBinding -alias => 'DFB';
+        use constant DSN => 'dbi:mysql:test;host=127.0.0.1';
+        use constant SQL => << '//';
+        SELECT solarSystemName AS name
+          FROM mapsolarsystems
+         WHERE regional  = :is_regional
+           AND security >= :minimum_security
+        //
 
-    CPAN Ratings
-        http://cpanratings.perl.org/d/DBIx-FlexibleBinding
+        # Pretty standard connect, this time with the DBI subclass package alias ...
+        #
+        my $dbh = DFB->connect(DSN, '', '', { RaiseError => 1 });
 
-    Search CPAN
-        http://search.cpan.org/dist/DBIx-FlexibleBinding/
+        # Cut out the middle men ...
+        #
+        my @system_names = $dbh->processall_hashref(SQL,
+                                                    is_regional => 1,
+                                                    minimum_security => 1.0,
+                                                    callback { $_->{name} });
 
+        #############################################################################
+        # SCENARIO 3                                                                #
+        # The subclass import method provides a versatile mechanism for simplifying #
+        # matters further.                                                          #
+        #############################################################################
 
-LICENSE AND COPYRIGHT
+        use DBIx::FlexibleBinding -subs => [ 'MyDB' ];
+        use constant DSN => 'dbi:mysql:test;host=127.0.0.1';
+        use constant SQL => << '//';
+        SELECT solarSystemName AS name
+          FROM mapsolarsystems
+         WHERE regional  = :is_regional
+           AND security >= :minimum_security
+        //
 
-Copyright (C) 2015 Iain Campbell
+        # MyDB will represent our datasource; initialise it ...
+        #
+        MyDB DSN, '', '', { RaiseError => 1 };
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; version 2 dated June, 1991 or at your option
-any later version.
+        # Cut out the middle men and some of the line-noise, too ...
+        #
+        my @system_names = MyDB(SQL,
+                                is_regional => 1,
+                                minimum_security => 1.0,
+                                callback { $_->{name} });
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+DESCRIPTION
+    This module subclasses the DBI to provide improvements and greater
+    flexibility in the following areas:
 
-A copy of the GNU General Public License is available in the source tree;
-if not, write to the Free Software Foundation, Inc.,
-51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+    * Accessing and interacting with datasources
+
+    * Parameter placeholders and data binding
+
+    * Data retrieval and processing
+
+  Accessing and interacting with datasources
+    The module's "-subs" import option may be used to create subroutines,
+    during the compile phase, and export them to the caller's namespace for
+    use later as representations of database and statement handles.
+
+    * Use for connecting to datasources
+
+          use DBIx::FlexibleBinding -subs => [ 'MyDB' ];
+
+          # Pass in any set of well-formed DBI->connect(...) arguments to associate
+          # your name with a live database connection ...
+          #
+          MyDB( 'dbi:mysql:test;host=127.0.0.1', '', '', { RaiseError => 1 } );
+
+          # Or, simply pass an existing database handle as the only argument ...
+          #
+          MyDB($dbh);
+
+    * Use them to represent database handles
+
+          use DBIx::FlexibleBinding -subs => [ 'MyDB' ];
+          use constant SQL => << '//';
+          SELECT *
+            FROM mapsolarsystems
+           WHERE regional  = :is_regional
+             AND security >= :minimum_security
+          //
+
+          MyDB( 'dbi:mysql:test;host=127.0.0.1', '', '', { RaiseError => 1 } );
+
+          # If your name is already associated with a database handle then just call
+          # it with no parameters to use it as such ...
+          #
+          my $sth = MyDB->prepare(SQL);
+
+    * Use them to represent statement handles
+
+          use DBIx::FlexibleBinding -subs => [ 'MyDB', 'solar_systems' ];
+          use constant SQL => << '//';
+          SELECT *
+            FROM mapsolarsystems
+           WHERE regional  = :is_regional
+             AND security >= :minimum_security
+          //
+
+          MyDB( 'dbi:mysql:test;host=127.0.0.1', '', '', { RaiseError => 1 } );
+
+          my $sth = MyDB->prepare(SQL);
+
+          # Simply call the statement handle proxy, passing a statement handle in as
+          # the only argument ...
+          #
+          solar_systems($sth);
+
+    * Use to interact with the represented database and statement handles
+
+          use DBIx::FlexibleBinding -subs => [ 'MyDB', 'solar_systems' ];
+          use constant SQL => << '//';
+          SELECT *
+            FROM mapsolarsystems
+           WHERE regional  = :is_regional
+             AND security >= :minimum_security
+          //
+
+          MyDB( 'dbi:mysql:test;host=127.0.0.1', '', '', { RaiseError => 1 } );
+
+          # Use the database handle proxy to prepare, bind and execute statements, then
+          # retrieve the results ...
+          #
+          # Use the database handle proxy to prepare, bind and execute statements, then
+          # retrieve the results ...
+          #
+          my $array_of_hashrefs = MyDB(SQL,
+                                       is_regional => 1,
+                                       minimum_security => 1.0);
+
+          # In list context, results come back as lists ...
+          #
+          my @array_of_hashrefs = MyDB(SQL,
+                                       is_regional => 1,
+                                       minimum_security => 1.0);
+
+          # Using -subs also relaxes strict 'subs' in the caller's scope, so pretty-up
+          # void context calls by losing the parentheses, if you wish to use callbacks
+          # to process the results ...
+          #
+          MyDB SQL, is_regional => 1, minimum_security => 1.0, callback {
+              printf "%-16s %.1f\n", $_->{solarSystemName}, $_->{security};
+          };
+
+          # You can use proxies to represent statements, too. Simply pass in a statement
+          # handle as the only argument ...
+          #
+          my $sth = MyDB->prepare(SQL);
+          solar_systems($sth);    # Using "solar_systems" as statement proxy.
+
+          # Now, when called with other types of arguments, those argument values are
+          # bound and the statement is executed ...
+          #
+          my $array_of_hashrefs = solar_systems(is_regional => 1,
+                                                minimum_security => 1.0);
+
+          # In list context, results come back as lists ...
+          #
+          my @array_of_hashrefs = solar_systems(is_regional => 1,
+                                                minimum_security => 1.0);
+
+          # Statements requiring no parameters cannot be used in this manner because
+          # making a call to a statement proxy with an arity of zero results in the
+          # statement handle being returned. In this situation, use something like
+          # undef as an argument (it will be ignored in this particular instance) ...
+          #
+          my $rv = statement_proxy(undef);
+          #
+          # Meh, you can't win 'em all!
+
+  Parameter placeholders and data binding
+    This module provides support for a wider range of parameter placeholder
+    and data-binding schemes. As well as continued support for the simple
+    positional placeholders ("?"), additional support is provided for
+    numeric placeholders (":N" and "?N"), and named placeholders (":NAME"
+    and @NAME).
+
+    As for the process of binding data values to parameters: that is, by
+    default, now completely automated, removing a significant part of the
+    workload from the prepare-bind-execute cycle. It is, however, possible
+    to swtch off automatic data-binding globally and on a
+    statement-by-statement basis.
+
+    The following familiar operations have been modified to accommodate all
+    of these changes, though developers continue to use them as they always
+    have done:
+
+    * "$DATABASE_HANDLE->prepare($STATEMENT, \%ATTR);"
+
+    * "$DATABASE_HANDLE->do($STATEMENT, \%ATTR, @DATA);"
+
+    * "$STATEMENT_HANDLE->bind_param($NAME_OR_POSITION, $VALUE, \%ATTR);"
+
+    * "$STATEMENT_HANDLE->execute(@DATA);"
+
+  Data retrieval and processing
+    Four new methods, each available for database and statement handles,
+    have been implemented:
+
+    * "processrow_arrayref"
+
+    * "processrow_hashref"
+
+    * "processall_arrayref"
+
+    * "processall_hashref"
+
+    These methods complement DBI's existing fetch methods, providing new
+    ways to retrieve and process data.
+
+PACKAGE GLOBALS
+  $DBIx::FlexibleBinding::AUTO_BINDING_ENABLED
+    A boolean setting used to determine whether or not automatic binding is
+    enabled or disabled globally.
+
+    The default setting is "1" (*enabled*).
+
+  $DBIx::FlexibleBinding::PROXIES_PROCESSALL_USING
+    The subroutines created with the "-subs" import option may be used to
+    retrieve result sets. By default, any such subroutines delegate that
+    particular task to a method called "processall_hashref", which is
+    provided by this module for both database and statement handles alike.
+
+    For reasons of efficiency the developer may prefer array references over
+    hash references, in which case they only need assign the value
+    "processall_arrayref" to this global.
+
+IMPORT TAGS AND OPTIONS
+  -alias
+    This option may be used by the caller to select an alias to use for this
+    package's unwieldly namespace.
+
+        use DBIx::FlexibleBinding -alias => 'DBIF';
+
+        my $dbh = DBIF->connect('dbi:SQLite:test.db', '', '');
+
+  -subs
+    This option may be used to create subroutines, during the compile phase,
+    in the caller's namespace to be used as representations of database and
+    statement handles.
+
+        use DBIx::FlexibleBinding -subs => [ 'MyDB' ];
+
+        # Initialise by passing in a valid set of DBI->connect(...) arguments.
+        # The database handle will be the return value.
+        #
+        MyDB 'dbi:mysql:test;host=127.0.0.1', '', '', { RaiseError => 1 };
+
+        # Or, initialise by passing in a DBI database handle.
+        # The handle is also the return value.
+        #
+        MyDB $dbh;
+
+        # Once initialised, use the subroutine as you would a DBI database handle.
+        #
+        my $statement = << '//';
+        SELECT solarSystemName AS name
+          FROM mapsolarsystems
+         WHERE security >= :minimum_security
+        //
+        my $sth = MyDB->prepare($statement);
+
+        # Or use it as an expressive time-saver!
+        #
+        my $array_of_hashrefs = MyDB($statement, security => 1.0);
+        my @system_names = MyDB($statement, minimum_security => 1.0, callback {
+            return $_->{name};
+        });
+        MyDB $statement, minimum_security => 1.0, callback {
+            my ($row) = @_;
+            print "$row->{name}\n";
+        };
+
+    Use of this option automatically relaxes "strict 'subs'" for the
+    remainder of scope containing the "use" directive. That is unless "use
+    strict 'subs'" or "use strict" appears afterwards.
+
+METHODS
+  connect
+        $dbh = DBIx::FlexibleBinding->connect($data_source, $username, $password);
+        $dbh = DBIx::FlexibleBinding->connect($data_source, 
+                                              $username, 
+                                              $password, 
+                                              \%attr);
+
+    Establishes a database connection, or session, to the requested
+    data_source and returns a database handle object if the connection
+    succeeds or undef if it does not.
+
+    *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#connect> for a more
+    detailed explanation of how to use this method*.
+
+METHODS ("DBIx::FlexibleBinding::db")
+  do
+        $rows = $dbh->do($statement_string);
+        $rows = $dbh->do($statement_string, \%attr);
+        $rows = $dbh->do($statement_string, \%attr, @bind_values);
+
+        $rows = $dbh->do($statement_handle);
+        $rows = $dbh->do($statement_handle, @bind_values);
+
+    Prepare if necessary and execute a single statement. Returns the number
+    of rows affected or undef on error. A return value of -1 means the
+    number of rows is not known, not applicable, or not available.
+
+    *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#do> for a more
+    detailed explanation of how to use this method*.
+
+  prepare
+        $sth = $dbh->prepare($statement_string);
+        $sth = $dbh->prepare($statement_string, \%attr);
+
+    Prepares a statement for later execution by the database engine and
+    returns a reference to a statement handle object.
+
+    *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#prepare> for a more
+    detailed explanation of how to use this method*.
+
+  processall_arrayref *(Database Handles)*
+        $array_of_values = $dbh->processall_arrayref($statement_string,
+                                                     \%optional_attr,
+                                                     @optional_data_bindings,
+                                                     @optional_callbacks);
+
+        @array_of_values = $dbh->processall_arrayref($statement_string,
+                                                     \%optional_attr,
+                                                     @optional_data_bindings,
+                                                     @optional_callbacks);
+
+        $array_of_values = $dbh->processall_arrayref($statement_handle,
+                                                     @optional_data_bindings,
+                                                     @optional_callbacks);
+
+        @array_of_values = $dbh->processall_arrayref($statement_handle,
+                                                     @optional_data_bindings,
+                                                     @optional_callbacks);
+
+    Prepares the statement if necessary, executes it with the specified data
+    bindings, and fetches all the rows in the result set.
+
+    Though presented initially as an array reference, the value of each row
+    may be transformed, by the caller, with the aid of callbacks.
+
+  processall_hashref *(Database Handles)*
+        $array_of_values = $dbh->processall_hashref($statement_string,
+                                                    \%optional_attr,
+                                                    @optional_data_bindings,
+                                                    @optional_callbacks);
+
+        @array_of_values = $dbh->processall_hashref($statement_string,
+                                                    \%optional_attr,
+                                                    @optional_data_bindings,
+                                                    @optional_callbacks);
+
+        $array_of_values = $dbh->processall_hashref($statement_handle,
+                                                    @optional_data_bindings,
+                                                    @optional_callbacks);
+
+        @array_of_values = $dbh->processall_hashref($statement_handle,
+                                                    @optional_data_bindings,
+                                                    @optional_callbacks);
+
+    Prepares the statement if necessary, executes it with the specified data
+    bindings, and fetches all the rows in the result set.
+
+    Though presented initially as a hash reference, the value of each row
+    may be transformed, by the caller, with the aid of callbacks.
+
+  processrow_arrayref *(Database Handles)*
+        $value = $dbh->processrow_arrayref($statement_string,
+                                           \%optional_attr,
+                                           @optional_data_bindings,
+                                           @optional_callbacks);
+
+        $value = $dbh->processrow_arrayref($statement_handle,
+                                           @optional_data_bindings,
+                                           @optional_callbacks);
+
+    Prepares the statement (if necessary) and executes it immediately with
+    the specified data bindings, and fetches one and only one row.
+
+    Though presented initially as an array reference, the value of that row
+    may be transformed, by the caller, with the aid of callbacks.
+
+  processrow_hashref *(Database Handles)*
+        $value = $dbh->processrow_hashref($statement_string,
+                                          \%optional_attr,
+                                          @optional_data_bindings,
+                                          @optional_callbacks);
+
+        $value = $dbh->processrow_hashref($statement_handle,
+                                          @optional_data_bindings,
+                                          @optional_callbacks);
+
+    Prepares the statement (if necessary) and executes it immediately with
+    the specified data bindings, and fetches one and only one row.
+
+    Though presented initially as a hash reference, that value of that row
+    may be transformed , by the caller, with the aid of callbacks.
+
+METHODS ("DBIx::FlexibleBinding::st")
+  auto_bind
+        $sth->auto_bind($boolean);
+        $state = $sth->auto_bind();
+
+    Use this method to enable, disable or inspect the current state of
+    automatic binding for a particular statement handle.
+
+  bind
+        $sth->bind(@bind_values);       # For positional and numeric placeholders
+        $sth->bind(\@bind_values);      # For positional and numeric placeholders
+        $sth->bind(%bind_values);       # For numeric and named placeholders
+        $sth->bind(\%bind_values);      # For numeric and named placeholders
+        $sth->bind([%bind_values]);     # For numeric and named placeholders
+
+    The bind method associates (binds) the values supplied in the parameter
+    list with the placeholders embedded in the prepared statement.
+
+    With automatic binding enabled (and it is by default), any operation
+    that results in a subsequent call to the "execute" method will almost
+    certainly complete any parameter binding automatically using this
+    method.
+
+    With automatic binding disabled, this method will not be called at all
+    and the execute method will almost dutifully convey bind values as they
+    are presented up the DBI inheritance chain to the handler's execute
+    method. *Almost dutifully* because a lone array reference will be
+    de-referenced and passed up as a list. The general assumption here is
+    that you won't present any bind values because the hard work of doing
+    the "bind_param" calls has already been done, or a manual call to the
+    "bind" method has already taken place.
+
+    In any case, it's pretty hard to screw-up when relying on this method to
+    bind your data values. Provided that what you present can be interpreted
+    as a list of values for positional placeholders, a list of key-value
+    pairs for named placeholders, or either for numeric placeholders, then
+    you'll be absolutely fine.
+
+  bind_param
+        $sth->bind_param($param_num, $bind_value)
+        $sth->bind_param($param_num, $bind_value, \%attr)
+        $sth->bind_param($param_num, $bind_value, $bind_type)
+
+        $sth->bind_param($param_name, $bind_value)
+        $sth->bind_param($param_name, $bind_value, \%attr)
+        $sth->bind_param($param_name, $bind_value, $bind_type)
+
+    The bind_param method associates (binds) a value to a placeholder
+    embedded in the prepared statement.
+
+    *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#bind_param> for a more
+    detailed explanation of how to use this method*.
+
+  execute
+        $rv = $sth->execute;
+        $rv = $sth->execute(@bind_values);
+
+    Perform whatever processing is necessary to execute the prepared
+    statement. An undef is returned if an error occurs. A successful execute
+    always returns true regardless of the number of rows affected, even if
+    it's zero.
+
+    *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#execute> for a more
+    detailed explanation of how to use this method*.
+
+  processall_arrayref *(Statement Handles)*
+        $array_of_values = $sth->processall_arrayref(@optional_callbacks);
+        @array_of_values = $sth->processall_arrayref(@optional_callbacks);
+
+    Fetches the entire result set.
+
+    Though presented initially as an array reference, the value of each row
+    may be transformed, by the caller, with the aid of callbacks.
+
+  processall_hashref *(Statement Handles)*
+        $array_of_values = $sth->processall_hashref(@optional_callbacks);
+        @array_of_values = $sth->processall_hashref(@optional_callbacks);
+
+    Fetches the entire result set.
+
+    Though presented initially as an hash reference, the value of each row
+    may be transformed, by the caller, with the aid of callbacks.
+
+  processrow_arrayref *(Statement Handles)*
+        $value = $sth->processrow_arrayref(@optional_callbacks);
+
+    Fetches the next row of a result set if one exists.
+
+    Though presented initially as an array reference, the value of that row
+    may be transformed, by the caller, with the aid of callbacks.
+
+  processrow_hashref *(Statement Handles)*
+        $value = $sth->processrow_hashref(@optional_callbacks);
+
+    Fetches the next row of a result set if one exists.
+
+    Though presented initially as an hash reference, the value of that row
+    may be transformed, by the caller, with the aid of callbacks.
+
+EXPORTS
+    The following symbols are exported by default:
+
+  callback
+    To enable the namespace using this module to take advantage of the
+    callbacks, which are one of its main features, without the unnecessary
+    burden of also including the module that provides the feature *(see
+    Params::Callbacks for more detailed information)*.
+
+REPOSITORY
+    * <https://github.com/cpanic/DBIx-FlexibleBinding>
+
+    * <http://search.cpan.org/dist/Params-Callbacks/lib/Params/Callbacks.pm>
+
+BUGS
+    Please report any bugs or feature requests to "bug-dbix-anybinding at
+    rt.cpan.org", or through the web interface at
+    <http://rt.cpan.org/NoAuth/ReportBug.html?Queue=DBIx-FlexibleBinding>. I
+    will be notified, and then you'll automatically be notified of progress
+    on your bug as I make changes.
+
+SUPPORT
+    You can find documentation for this module with the perldoc command.
+
+        perldoc DBIx::FlexibleBinding
+
+    You can also look for information at:
+
+    *   RT: CPAN's request tracker (report bugs here)
+
+        <http://rt.cpan.org/NoAuth/Bugs.html?Dist=DBIx-FlexibleBinding>
+
+    *   AnnoCPAN: Annotated CPAN documentation
+
+        <http://annocpan.org/dist/DBIx-FlexibleBinding>
+
+    *   CPAN Ratings
+
+        <http://cpanratings.perl.org/d/DBIx-FlexibleBinding>
+
+    *   Search CPAN
+
+        <http://search.cpan.org/dist/DBIx-FlexibleBinding/>
+
+ACKNOWLEDGEMENTS
+    Test data set extracted from Fuzzwork's MySQL conversion of CCP's EVE
+    Online Static Data Export:
+
+    * Fuzzwork <https://www.fuzzwork.co.uk/>
+
+    * EVE Online <http://www.eveonline.com/>
+
+    Eternal gratitude to GitHub contributors:
+
+    * Syohei Yoshida <http://search.cpan.org/~syohex/>
+
+AUTHOR
+    Iain Campbell <cpanic@cpan.org>
+
+COPYRIGHT AND LICENSE
+    This software is copyright (c) 2012-2015 by Iain Campbell.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
 

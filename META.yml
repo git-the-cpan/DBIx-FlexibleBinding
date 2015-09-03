@@ -3,26 +3,22 @@ abstract: 'Flexible parameter binding and record fetching'
 author:
   - 'Iain Campbell <cpanic@cpan.org>'
 build_requires:
-  DBD::SQLite: '0'
-  DBI: '0'
-  JSON::Syck: '0'
+  Data::Dumper: '0'
+  JSON: '0'
   Test::More: '0'
 configure_requires:
   ExtUtils::MakeMaker: '0'
-dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 7.04, CPAN::Meta::Converter version 2.150005'
-license: gpl
+dynamic_config: 0
+generated_by: 'Dist::Zilla version 5.039, CPAN::Meta::Converter version 2.150005'
+license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: '1.4'
 name: DBIx-FlexibleBinding
-no_index:
-  directory:
-    - t
-    - inc
 requires:
   Carp: '0'
   DBI: '0'
+  Exporter: '0'
   List::MoreUtils: '0'
   MRO::Compat: '0'
   Params::Callbacks: '0'
@@ -30,7 +26,6 @@ requires:
   Sub::Name: '0'
   namespace::clean: '0'
   perl: '5.006'
-resources:
-  repository: https://github.com/cpanic/DBIx-FlexibleBinding.git
-version: '0.001006'
-x_serialization_backend: 'CPAN::Meta::YAML version 0.016'
+  strict: '0'
+  warnings: '0'
+version: '1.152461'

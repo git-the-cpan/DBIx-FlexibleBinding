@@ -1,10 +1,14 @@
 package DBIx::FlexibleBinding;
-
+BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152461'; }
 =pod
 
 =head1 NAME
 
 DBIx::FlexibleBinding - Flexible parameter binding and record fetching
+
+=head1 VERSION
+
+version 1.152461
 
 =head1 SYNOPSIS
 
@@ -293,7 +297,6 @@ use Sub::Name;
 use namespace::clean;
 use Params::Callbacks 'callback';
 
-our $VERSION = '0.001006';
 our @ISA     = ( 'DBI', 'Exporter' );
 our @EXPORT  = qw(callback);
 
@@ -1142,13 +1145,15 @@ more detailed information)>.
 
 =pod
 
-=head1 AUTHOR
-
-Iain Campbell, C<< <cpanic at cpan.org> >>
-
 =head1 REPOSITORY
 
-L<DBIx-FlexibleBinding at GitHub|https://github.com/cpanic/DBIx-FlexibleBinding>
+=over 2
+
+=item * L<https://github.com/cpanic/DBIx-FlexibleBinding>
+
+=item * L<http://search.cpan.org/dist/Params-Callbacks/lib/Params/Callbacks.pm>
+
+=back 
 
 =head1 BUGS
 
@@ -1207,24 +1212,15 @@ Eternal gratitude to GitHub contributors:
 
 =back
 
-=head1 LICENSE AND COPYRIGHT
+=head1 AUTHOR
 
-Copyright 2015 Iain Campbell.
+Iain Campbell <cpanic@cpan.org>
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; version 2 dated June, 1991 or at your option
-any later version.
+=head1 COPYRIGHT AND LICENSE
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+This software is copyright (c) 2012-2015 by Iain Campbell.
 
-A copy of the GNU General Public License is available in the source tree;
-if not, write to the Free Software Foundation, Inc.,
-51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
-
