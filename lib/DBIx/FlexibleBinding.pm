@@ -1,14 +1,14 @@
 package DBIx::FlexibleBinding;
-BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152460'; }
-=pod
-
+BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152480'; }
 =head1 NAME
 
 DBIx::FlexibleBinding - Flexible parameter binding and record fetching
 
 =head1 VERSION
 
-version 1.152460
+version 1.152480
+
+=cut
 
 =head1 SYNOPSIS
 
@@ -99,6 +99,7 @@ ways to interact with datasources, while improving general readability.
                             is_regional => 1,
                             minimum_security => 1.0,
                             callback { $_->{name} });
+=cut
 
 =head1 DESCRIPTION
 
@@ -107,13 +108,60 @@ in the following areas:
 
 =over 2
 
-=item * Accessing and interacting with datasources
-
 =item * Parameter placeholders and data binding
 
 =item * Data retrieval and processing
 
+=item * Accessing and interacting with datasources
+
 =back
+
+=head2 Parameter placeholders and data binding
+
+This module provides support for a wider range of parameter placeholder and
+data-binding schemes. As well as continued support for the simple positional
+placeholders (C<?>), additional support is provided for numeric placeholders (C<:N>
+and C<?N>), and named placeholders (C<:NAME> and C<@NAME>).
+
+As for the process of binding data values to parameters: that is, by default,
+now completely automated, removing a significant part of the workload from the
+prepare-bind-execute cycle. It is, however, possible to swtch off automatic
+data-binding globally and on a statement-by-statement basis.
+
+The following familiar operations have been modified to accommodate all of these
+changes, though developers continue to use them as they always have done:
+
+=over 2
+
+=item * C<$DATABASE_HANDLE-E<gt>prepare($STATEMENT, \%ATTR);>
+
+=item * C<$DATABASE_HANDLE-E<gt>do($STATEMENT, \%ATTR, @DATA);>
+
+=item * C<$STATEMENT_HANDLE-E<gt>bind_param($NAME_OR_POSITION, $VALUE, \%ATTR);>
+
+=item * C<$STATEMENT_HANDLE-E<gt>execute(@DATA);>
+
+=back
+
+=head2 Data retrieval and processing
+
+Four new methods, each available for database B<and> statement handles, have
+been implemented:
+
+=over 2
+
+=item * C<processrow_arrayref>
+
+=item * C<processrow_hashref>
+
+=item * C<processall_arrayref>
+
+=item * C<processall_hashref>
+
+=back
+
+These methods complement DBI's existing fetch methods, providing new ways to
+retrieve and process data.
 
 =head2 Accessing and interacting with datasources
 
@@ -236,53 +284,6 @@ use later as representations of database and statement handles.
 
 =back
 
-=head2 Parameter placeholders and data binding
-
-This module provides support for a wider range of parameter placeholder and
-data-binding schemes. As well as continued support for the simple positional
-placeholders (C<?>), additional support is provided for numeric placeholders (C<:N>
-and C<?N>), and named placeholders (C<:NAME> and C<@NAME>).
-
-As for the process of binding data values to parameters: that is, by default,
-now completely automated, removing a significant part of the workload from the
-prepare-bind-execute cycle. It is, however, possible to swtch off automatic
-data-binding globally and on a statement-by-statement basis.
-
-The following familiar operations have been modified to accommodate all of these
-changes, though developers continue to use them as they always have done:
-
-=over 2
-
-=item * C<$DATABASE_HANDLE-E<gt>prepare($STATEMENT, \%ATTR);>
-
-=item * C<$DATABASE_HANDLE-E<gt>do($STATEMENT, \%ATTR, @DATA);>
-
-=item * C<$STATEMENT_HANDLE-E<gt>bind_param($NAME_OR_POSITION, $VALUE, \%ATTR);>
-
-=item * C<$STATEMENT_HANDLE-E<gt>execute(@DATA);>
-
-=back
-
-=head2 Data retrieval and processing
-
-Four new methods, each available for database B<and> statement handles, have
-been implemented:
-
-=over 2
-
-=item * C<processrow_arrayref>
-
-=item * C<processrow_hashref>
-
-=item * C<processall_arrayref>
-
-=item * C<processall_hashref>
-
-=back
-
-These methods complement DBI's existing fetch methods, providing new ways to
-retrieve and process data.
-
 =cut
 
 use 5.006;
@@ -297,8 +298,8 @@ use Sub::Name;
 use namespace::clean;
 use Params::Callbacks 'callback';
 
-our @ISA     = ( 'DBI', 'Exporter' );
-our @EXPORT  = qw(callback);
+our @ISA = ( 'DBI', 'Exporter' );
+our @EXPORT = qw(callback);
 
 =head1 PACKAGE GLOBALS
 
@@ -330,46 +331,6 @@ sub _dbix_set_err
 {
     my ( $handle, @args ) = @_;
     return $handle->set_err( $DBI::stderr, @args );
-}
-{
-    my %proxies;
-
-
-    sub _proxy
-    {
-        my ( $package, $name, @args ) = @_;
-        $proxies{$name} = undef unless exists $proxies{$name};
-
-        if (@args) {
-            if ( @args == 1 && !defined( $args[0] ) ) {
-                undef $proxies{$name};
-            }
-            elsif ( @args == 1 && blessed( $args[0] ) ) {
-                if ( $args[0]->isa('DBI::db') || $args[0]->isa('DBI::st') ) {
-                    $proxies{$name} = $args[0];
-                }
-                else {
-                    confess "A database or statement handle was expected";
-                }
-            }
-            elsif ( $args[0] =~ /^dbi:/i ) {
-                $proxies{$name} = $package->connect(@args);
-            }
-            else {
-                if ( $proxies{$name}->isa('DBI::st') ) {
-                    if ( $proxies{$name}->{NUM_OF_PARAMS} ) {
-                        $proxies{$name}->execute(@args);
-                    }
-                    else {
-                        $proxies{$name}->execute();
-                    }
-                }
-                return $proxies{$name}->$PROXIES_PROCESSALL_USING(@args);
-            }
-        }
-
-        return $proxies{$name};
-    }
 }
 
 =head1 IMPORT TAGS AND OPTIONS
@@ -449,10 +410,12 @@ sub import
                 my $list = shift(@args);
                 confess "Expected anonymous list or array reference after '$arg'"
                   unless ref($list) && reftype($list) eq 'ARRAY';
-                for my $proxy_name (@$list) {
+                for my $name (@$list) {
+                    my $sub = sub {
+                        DBIx::FlexibleBinding::ObjectProxy->handle( $name, @_ );
+                    };
                     no strict 'refs';    ## no critic [TestingAndDebugging::ProhibitNoStrict]
-                    my $sub = sub { _proxy( $package, $proxy_name, @_ ) };
-                    *{ $caller . '::' . $proxy_name } = subname( $proxy_name => $sub );
+                    *{ $caller . '::' . $name } = subname( $name => $sub );
                 }
                 $caller->unimport( 'strict', 'subs' );
             }
@@ -466,18 +429,18 @@ sub import
     }
 
     goto &Exporter::import;
-}
+} ## end sub import
 
-=head1 METHODS
+=head1 METHODS (C<DBIx::FlexibleBinding>)
 
 =cut
 
 =head2 connect
 
     $dbh = DBIx::FlexibleBinding->connect($data_source, $username, $password);
-    $dbh = DBIx::FlexibleBinding->connect($data_source, 
-                                          $username, 
-                                          $password, 
+    $dbh = DBIx::FlexibleBinding->connect($data_source,
+                                          $username,
+                                          $password,
                                           \%attr);
 
 Establishes a database connection, or session, to the requested data_source and
@@ -1128,6 +1091,157 @@ sub processrow_hashref
     return $result;
 }
 
+
+package DBIx::FlexibleBinding::ObjectProxy;
+BEGIN { $DBIx::FlexibleBinding::ObjectProxy::VERSION = '1.152480'; }
+use Carp 'confess';
+use Scalar::Util 'blessed';
+use Test::More;
+use YAML::Syck 'Dump';
+use namespace::clean;
+
+our $AUTOLOAD;
+
+my %proxies;
+
+
+sub handle
+{
+    my ( $self, $name, @args ) = &get_or_create_new;
+
+    if (@args) {
+        if ( @args == 1 && !defined( $args[0] ) ) {
+            $self->assign_nothing();
+        }
+        elsif ( @args == 1 && blessed( $args[0] ) ) {
+            if ( $args[0]->isa('DBI::db') ) {
+                $self->assign_database_connection(@args);
+            }
+            elsif ( $args[0]->isa('DBI::st') ) {
+                $self->assign_statement(@args);
+            }
+            else {
+                confess "A database or statement handle was expected";
+            }
+        }
+        elsif ( $args[0] =~ /^dbi:/i ) {
+            $self->assign_database_connection(@args);
+        }
+        else {
+            return $self->process(@args);
+        }
+    }
+
+    return $self->{target};
+}
+
+
+sub get_or_create_new
+{
+    my ( $class, $name, @args ) = @_;
+    $class = ref($class) || $class;
+    my $self = $proxies{$name};
+
+    unless ( defined $self ) {
+        $self = bless( { name => $name }, $class );
+        $proxies{$name} = $self->assign_nothing();
+    }
+
+    return ( $self, $name, @args );
+}
+
+
+sub assign_nothing
+{
+    my ($self) = @_;
+    delete $self->{target} if exists $self->{target};
+    return bless( $self, 'DBIx::FlexibleBinding::UnassignedProxy' );
+}
+
+
+sub assign_database_connection
+{
+    my ( $self, @args ) = @_;
+
+    if ( @args == 1 && blessed( $args[0] ) ) {
+        confess "Expected a database handle" unless $args[0]->isa('DBI::db');
+        $self->{target} = $args[0];
+        bless $self->{target}, 'DBIx::FlexibleBinding::db'
+          unless $self->{target}->isa('DBIx::FlexibleBinding::db');
+    }
+    else {
+        confess "Expected a set of database connection parameters"
+          unless $args[0] =~ /^dbi:/i;
+        $self->{target} = DBIx::FlexibleBinding->connect(@args);
+    }
+
+    return bless( $self, 'DBIx::FlexibleBinding::DatabaseConnectionProxy' );
+}
+
+
+sub assign_statement
+{
+    my ( $self, @args ) = @_;
+
+    confess "Expected a statement handle" unless $args[0]->isa('DBI::st');
+    $self->{target} = $args[0];
+    bless $self->{target}, 'DBIx::FlexibleBinding::st'
+      unless $self->{target}->isa('DBIx::FlexibleBinding::st');
+    return bless( $self, 'DBIx::FlexibleBinding::StatementProxy' );
+}
+
+
+sub AUTOLOAD
+{
+    my ( $self, @args ) = @_;
+    ( my $method = $AUTOLOAD ) =~ s/.*:://;
+    unless ( defined &$AUTOLOAD ) {
+        no strict 'refs';    ## no critic [TestingAndDebugging::ProhibitNoStrict]
+        my $endpoint = $self->{target}->can($method) or confess "Invalid method '$method'";
+        *$AUTOLOAD = sub {
+            my ( $object, @args ) = @_;
+            $object->{target}->$method(@args);
+        };
+    }
+    goto &$AUTOLOAD;
+}
+
+
+package DBIx::FlexibleBinding::UnassignedProxy;
+BEGIN { $DBIx::FlexibleBinding::UnassignedProxy::VERSION = '1.152480'; }
+our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
+
+
+package DBIx::FlexibleBinding::DatabaseConnectionProxy;
+BEGIN { $DBIx::FlexibleBinding::DatabaseConnectionProxy::VERSION = '1.152480'; }
+use Carp 'confess';
+
+our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
+
+
+package DBIx::FlexibleBinding::StatementProxy;
+BEGIN { $DBIx::FlexibleBinding::StatementProxy::VERSION = '1.152480'; }
+use Carp 'confess';
+
+our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
+
+
+sub process
+{
+    my ( $self, @args ) = @_;
+
+    if ( $self->{target}->isa('DBIx::FlexibleBinding::st') ) {
+        if ( $self->{target}->{NUM_OF_PARAMS} ) {
+            $self->execute(@args);
+        }
+        else {
+            $self->execute();
+        }
+    }
+
+    return $self->{target}->$PROXIES_PROCESSALL_USING(@args);
+}
+
 1;
 
 =head1 EXPORTS
@@ -1153,7 +1267,7 @@ more detailed information)>.
 
 =item * L<http://search.cpan.org/dist/Params-Callbacks/lib/Params/Callbacks.pm>
 
-=back 
+=back
 
 =head1 BUGS
 

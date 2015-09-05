@@ -2,7 +2,7 @@ NAME
     DBIx::FlexibleBinding - Flexible parameter binding and record fetching
 
 VERSION
-    version 1.152460
+    version 1.152480
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of
@@ -98,11 +98,51 @@ DESCRIPTION
     This module subclasses the DBI to provide improvements and greater
     flexibility in the following areas:
 
-    * Accessing and interacting with datasources
-
     * Parameter placeholders and data binding
 
     * Data retrieval and processing
+
+    * Accessing and interacting with datasources
+
+  Parameter placeholders and data binding
+    This module provides support for a wider range of parameter placeholder
+    and data-binding schemes. As well as continued support for the simple
+    positional placeholders ("?"), additional support is provided for
+    numeric placeholders (":N" and "?N"), and named placeholders (":NAME"
+    and @NAME).
+
+    As for the process of binding data values to parameters: that is, by
+    default, now completely automated, removing a significant part of the
+    workload from the prepare-bind-execute cycle. It is, however, possible
+    to swtch off automatic data-binding globally and on a
+    statement-by-statement basis.
+
+    The following familiar operations have been modified to accommodate all
+    of these changes, though developers continue to use them as they always
+    have done:
+
+    * "$DATABASE_HANDLE->prepare($STATEMENT, \%ATTR);"
+
+    * "$DATABASE_HANDLE->do($STATEMENT, \%ATTR, @DATA);"
+
+    * "$STATEMENT_HANDLE->bind_param($NAME_OR_POSITION, $VALUE, \%ATTR);"
+
+    * "$STATEMENT_HANDLE->execute(@DATA);"
+
+  Data retrieval and processing
+    Four new methods, each available for database and statement handles,
+    have been implemented:
+
+    * "processrow_arrayref"
+
+    * "processrow_hashref"
+
+    * "processall_arrayref"
+
+    * "processall_hashref"
+
+    These methods complement DBI's existing fetch methods, providing new
+    ways to retrieve and process data.
 
   Accessing and interacting with datasources
     The module's "-subs" import option may be used to create subroutines,
@@ -220,46 +260,6 @@ DESCRIPTION
           #
           # Meh, you can't win 'em all!
 
-  Parameter placeholders and data binding
-    This module provides support for a wider range of parameter placeholder
-    and data-binding schemes. As well as continued support for the simple
-    positional placeholders ("?"), additional support is provided for
-    numeric placeholders (":N" and "?N"), and named placeholders (":NAME"
-    and @NAME).
-
-    As for the process of binding data values to parameters: that is, by
-    default, now completely automated, removing a significant part of the
-    workload from the prepare-bind-execute cycle. It is, however, possible
-    to swtch off automatic data-binding globally and on a
-    statement-by-statement basis.
-
-    The following familiar operations have been modified to accommodate all
-    of these changes, though developers continue to use them as they always
-    have done:
-
-    * "$DATABASE_HANDLE->prepare($STATEMENT, \%ATTR);"
-
-    * "$DATABASE_HANDLE->do($STATEMENT, \%ATTR, @DATA);"
-
-    * "$STATEMENT_HANDLE->bind_param($NAME_OR_POSITION, $VALUE, \%ATTR);"
-
-    * "$STATEMENT_HANDLE->execute(@DATA);"
-
-  Data retrieval and processing
-    Four new methods, each available for database and statement handles,
-    have been implemented:
-
-    * "processrow_arrayref"
-
-    * "processrow_hashref"
-
-    * "processall_arrayref"
-
-    * "processall_hashref"
-
-    These methods complement DBI's existing fetch methods, providing new
-    ways to retrieve and process data.
-
 PACKAGE GLOBALS
   $DBIx::FlexibleBinding::AUTO_BINDING_ENABLED
     A boolean setting used to determine whether or not automatic binding is
@@ -327,12 +327,12 @@ IMPORT TAGS AND OPTIONS
     remainder of scope containing the "use" directive. That is unless "use
     strict 'subs'" or "use strict" appears afterwards.
 
-METHODS
+METHODS ("DBIx::FlexibleBinding")
   connect
         $dbh = DBIx::FlexibleBinding->connect($data_source, $username, $password);
-        $dbh = DBIx::FlexibleBinding->connect($data_source, 
-                                              $username, 
-                                              $password, 
+        $dbh = DBIx::FlexibleBinding->connect($data_source,
+                                              $username,
+                                              $password,
                                               \%attr);
 
     Establishes a database connection, or session, to the requested

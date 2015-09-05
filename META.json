@@ -36,6 +36,8 @@
             "Params::Callbacks" : "0",
             "Scalar::Util" : "0",
             "Sub::Name" : "0",
+            "Test::More" : "0",
+            "YAML::Syck" : "0",
             "namespace::clean" : "0",
             "perl" : "5.006",
             "strict" : "0",
@@ -45,12 +47,11 @@
       "test" : {
          "requires" : {
             "Data::Dumper" : "0",
-            "JSON" : "0",
-            "Test::More" : "0"
+            "JSON" : "0"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "1.152460"
+   "version" : "1.152480"
 }
 
