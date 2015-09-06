@@ -1,12 +1,12 @@
 package DBIx::FlexibleBinding;
-BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152480'; }
+BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152490'; }
 =head1 NAME
 
 DBIx::FlexibleBinding - Flexible parameter binding and record fetching
 
 =head1 VERSION
 
-version 1.152480
+version 1.152490
 
 =cut
 
@@ -293,8 +293,7 @@ use Carp qw(confess);
 use Exporter ();
 use DBI      ();
 use MRO::Compat 'c3';
-use Scalar::Util qw(reftype blessed);
-use Sub::Name;
+use Scalar::Util qw(reftype);
 use namespace::clean;
 use Params::Callbacks 'callback';
 
@@ -410,14 +409,10 @@ sub import
                 my $list = shift(@args);
                 confess "Expected anonymous list or array reference after '$arg'"
                   unless ref($list) && reftype($list) eq 'ARRAY';
-                for my $name (@$list) {
-                    my $sub = sub {
-                        DBIx::FlexibleBinding::ObjectProxy->handle( $name, @_ );
-                    };
-                    no strict 'refs';    ## no critic [TestingAndDebugging::ProhibitNoStrict]
-                    *{ $caller . '::' . $name } = subname( $name => $sub );
-                }
                 $caller->unimport( 'strict', 'subs' );
+                for my $name (@$list) {
+                    DBIx::FlexibleBinding::ObjectProxy->create( $name, $caller );
+                }
             }
             else {
                 confess "Unrecognised import option '$arg'";
@@ -429,7 +424,7 @@ sub import
     }
 
     goto &Exporter::import;
-} ## end sub import
+}
 
 =head1 METHODS (C<DBIx::FlexibleBinding>)
 
@@ -888,8 +883,9 @@ sub bind
     $sth->bind_param($param_name, $bind_value, \%attr)
     $sth->bind_param($param_name, $bind_value, $bind_type)
 
-The bind_param method associates (binds) a value to a placeholder embedded in the
-prepared statement.
+The C<bind_param> method associates (binds) a value to a placeholder embedded in the
+prepared statement. The implementation provided by this module allows the use of
+parameter names, if appropriate, in addition to parameter positions. 
 
 I<Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#bind_param> for a more detailed
 explanation of how to use this method>.
@@ -1093,21 +1089,34 @@ sub processrow_hashref
 
 
 package DBIx::FlexibleBinding::ObjectProxy;
-BEGIN { $DBIx::FlexibleBinding::ObjectProxy::VERSION = '1.152480'; }
+BEGIN { $DBIx::FlexibleBinding::ObjectProxy::VERSION = '1.152490'; }
 use Carp 'confess';
 use Scalar::Util 'blessed';
+use Sub::Name;
+use namespace::clean;
+
 use Test::More;
 use YAML::Syck 'Dump';
-use namespace::clean;
 
 our $AUTOLOAD;
 
 my %proxies;
 
 
+sub create
+{
+    my ( $class, $name, $caller ) = @_;
+    $class = ref($class) || $class;
+    no strict 'refs';    ## no critic [TestingAndDebugging::ProhibitNoStrict]
+    *{ $caller . '::' . $name }
+      = subname( $name => sub { $class->handle( $name, @_ ) } );
+    return $class->get($name);
+}
+
+
 sub handle
 {
-    my ( $self, $name, @args ) = &get_or_create_new;
+    my ( $self, $name, @args ) = &get;
 
     if (@args) {
         if ( @args == 1 && !defined( $args[0] ) ) {
@@ -1136,7 +1145,7 @@ sub handle
 }
 
 
-sub get_or_create_new
+sub get
 {
     my ( $class, $name, @args ) = @_;
     $class = ref($class) || $class;
@@ -1208,19 +1217,19 @@ sub AUTOLOAD
 
 
 package DBIx::FlexibleBinding::UnassignedProxy;
-BEGIN { $DBIx::FlexibleBinding::UnassignedProxy::VERSION = '1.152480'; }
+BEGIN { $DBIx::FlexibleBinding::UnassignedProxy::VERSION = '1.152490'; }
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 
 package DBIx::FlexibleBinding::DatabaseConnectionProxy;
-BEGIN { $DBIx::FlexibleBinding::DatabaseConnectionProxy::VERSION = '1.152480'; }
+BEGIN { $DBIx::FlexibleBinding::DatabaseConnectionProxy::VERSION = '1.152490'; }
 use Carp 'confess';
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 
 package DBIx::FlexibleBinding::StatementProxy;
-BEGIN { $DBIx::FlexibleBinding::StatementProxy::VERSION = '1.152480'; }
+BEGIN { $DBIx::FlexibleBinding::StatementProxy::VERSION = '1.152490'; }
 use Carp 'confess';
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
@@ -1232,10 +1241,10 @@ sub process
 
     if ( $self->{target}->isa('DBIx::FlexibleBinding::st') ) {
         if ( $self->{target}->{NUM_OF_PARAMS} ) {
-            $self->execute(@args);
+            $self->{target}->execute(@args);
         }
         else {
-            $self->execute();
+            $self->{target}->execute();
         }
     }
 
@@ -1259,13 +1268,23 @@ more detailed information)>.
 
 =pod
 
+=head1 SEE ALSO
+
+=over 2
+
+=item * L<DBI>
+
+=item * L<Params::Callbacks>
+
+=back 
+
 =head1 REPOSITORY
 
 =over 2
 
 =item * L<https://github.com/cpanic/DBIx-FlexibleBinding>
 
-=item * L<http://search.cpan.org/dist/Params-Callbacks/lib/Params/Callbacks.pm>
+=item * L<http://search.cpan.org/dist/DBIx-FlexibleBinding/lib/DBIx/FlexibleBinding.pm>
 
 =back
 
@@ -1303,7 +1322,6 @@ L<http://cpanratings.perl.org/d/DBIx-FlexibleBinding>
 L<http://search.cpan.org/dist/DBIx-FlexibleBinding/>
 
 =back
-
 
 =head1 ACKNOWLEDGEMENTS
 

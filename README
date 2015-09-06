@@ -2,7 +2,7 @@ NAME
     DBIx::FlexibleBinding - Flexible parameter binding and record fetching
 
 VERSION
-    version 1.152480
+    version 1.152490
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of
@@ -497,8 +497,10 @@ METHODS ("DBIx::FlexibleBinding::st")
         $sth->bind_param($param_name, $bind_value, \%attr)
         $sth->bind_param($param_name, $bind_value, $bind_type)
 
-    The bind_param method associates (binds) a value to a placeholder
-    embedded in the prepared statement.
+    The "bind_param" method associates (binds) a value to a placeholder
+    embedded in the prepared statement. The implementation provided by this
+    module allows the use of parameter names, if appropriate, in addition to
+    parameter positions.
 
     *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#bind_param> for a more
     detailed explanation of how to use this method*.
@@ -558,10 +560,16 @@ EXPORTS
     burden of also including the module that provides the feature *(see
     Params::Callbacks for more detailed information)*.
 
+SEE ALSO
+    * DBI
+
+    * Params::Callbacks
+
 REPOSITORY
     * <https://github.com/cpanic/DBIx-FlexibleBinding>
 
-    * <http://search.cpan.org/dist/Params-Callbacks/lib/Params/Callbacks.pm>
+    * <http://search.cpan.org/dist/DBIx-FlexibleBinding/lib/DBIx/FlexibleBin
+      ding.pm>
 
 BUGS
     Please report any bugs or feature requests to "bug-dbix-anybinding at

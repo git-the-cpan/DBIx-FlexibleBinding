@@ -1,7 +1,9 @@
-1.152480  2015-09-06 00:42:53+01:00 Europe/London
+1.152490  2015-09-06 20:22:54+01:00 Europe/London
 
-1.152460  2015-09-03 21:55:46+01:00 Europe/London
-
+    - Code producing database connection and statement proxies has been completely
+      refactored.
+    - POD corrections and additions.
+    
 1.152461  2015-09-03 21:02:06+01:00 Europe/London
 
-    Module now managed using Dist::Zilla and version numbers are auto generated
+    - Module now managed using Dist::Zilla and version numbers are auto generated
