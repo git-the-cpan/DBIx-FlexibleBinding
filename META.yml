@@ -29,4 +29,4 @@ requires:
   perl: '5.006'
   strict: '0'
   warnings: '0'
-version: '1.152490'
+version: '1.152491'

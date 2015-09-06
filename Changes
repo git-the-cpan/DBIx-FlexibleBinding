@@ -1,3 +1,7 @@
+1.152491  2015-09-06 20:30:55+01:00 Europe/London
+
+    - Guess who didn't forget to hide embedded packages from PAUSE?
+    
 1.152490  2015-09-06 20:22:54+01:00 Europe/London
 
     - Code producing database connection and statement proxies has been completely

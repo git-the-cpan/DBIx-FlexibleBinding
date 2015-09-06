@@ -1,12 +1,12 @@
 package DBIx::FlexibleBinding;
-BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152490'; }
+BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152491'; }
 =head1 NAME
 
 DBIx::FlexibleBinding - Flexible parameter binding and record fetching
 
 =head1 VERSION
 
-version 1.152490
+version 1.152491
 
 =cut
 
@@ -1088,8 +1088,9 @@ sub processrow_hashref
 }
 
 
-package DBIx::FlexibleBinding::ObjectProxy;
-BEGIN { $DBIx::FlexibleBinding::ObjectProxy::VERSION = '1.152490'; }
+package # Hide from PAUSE
+    DBIx::FlexibleBinding::ObjectProxy;
+
 use Carp 'confess';
 use Scalar::Util 'blessed';
 use Sub::Name;
@@ -1216,20 +1217,24 @@ sub AUTOLOAD
 }
 
 
-package DBIx::FlexibleBinding::UnassignedProxy;
-BEGIN { $DBIx::FlexibleBinding::UnassignedProxy::VERSION = '1.152490'; }
+package # Hide from PAUSE
+    DBIx::FlexibleBinding::UnassignedProxy;
+
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 
-package DBIx::FlexibleBinding::DatabaseConnectionProxy;
-BEGIN { $DBIx::FlexibleBinding::DatabaseConnectionProxy::VERSION = '1.152490'; }
+package # Hide from PAUSE
+    DBIx::FlexibleBinding::DatabaseConnectionProxy;
+
 use Carp 'confess';
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 
-package DBIx::FlexibleBinding::StatementProxy;
-BEGIN { $DBIx::FlexibleBinding::StatementProxy::VERSION = '1.152490'; }
+package # Hide from PAUSE
+    DBIx::FlexibleBinding::StatementProxy;
+
+
 use Carp 'confess';
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
