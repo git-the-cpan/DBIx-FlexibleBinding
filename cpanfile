@@ -5,17 +5,17 @@ requires "List::MoreUtils" => "0";
 requires "MRO::Compat" => "0";
 requires "Params::Callbacks" => "0";
 requires "Scalar::Util" => "0";
-requires "Sub::Name" => "0";
+requires "Sub::Install" => "0";
 requires "Test::More" => "0";
 requires "YAML::Syck" => "0";
 requires "namespace::clean" => "0";
-requires "perl" => "5.006";
 requires "strict" => "0";
 requires "warnings" => "0";
 
 on 'test' => sub {
   requires "Data::Dumper" => "0";
   requires "JSON" => "0";
+  requires "perl" => "5.006";
 };
 
 on 'configure' => sub {

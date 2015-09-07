@@ -1,5 +1,5 @@
 {
-   "abstract" : "Flexible parameter binding and record fetching",
+   "abstract" : "Greater flexibility on statement placeholder choice and data binding",
    "author" : [
       "Iain Campbell <cpanic@cpan.org>"
    ],
@@ -35,11 +35,10 @@
             "MRO::Compat" : "0",
             "Params::Callbacks" : "0",
             "Scalar::Util" : "0",
-            "Sub::Name" : "0",
+            "Sub::Install" : "0",
             "Test::More" : "0",
             "YAML::Syck" : "0",
             "namespace::clean" : "0",
-            "perl" : "5.006",
             "strict" : "0",
             "warnings" : "0"
          }
@@ -47,11 +46,12 @@
       "test" : {
          "requires" : {
             "Data::Dumper" : "0",
-            "JSON" : "0"
+            "JSON" : "0",
+            "perl" : "5.006"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "1.152500"
+   "version" : "1.152501"
 }
 

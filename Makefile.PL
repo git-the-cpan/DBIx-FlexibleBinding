@@ -7,7 +7,7 @@ use 5.006;
 use ExtUtils::MakeMaker;
 
 my %WriteMakefileArgs = (
-  "ABSTRACT" => "Flexible parameter binding and record fetching",
+  "ABSTRACT" => "Greater flexibility on statement placeholder choice and data binding",
   "AUTHOR" => "Iain Campbell <cpanic\@cpan.org>",
   "CONFIGURE_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0
@@ -24,7 +24,7 @@ my %WriteMakefileArgs = (
     "MRO::Compat" => 0,
     "Params::Callbacks" => 0,
     "Scalar::Util" => 0,
-    "Sub::Name" => 0,
+    "Sub::Install" => 0,
     "Test::More" => 0,
     "YAML::Syck" => 0,
     "namespace::clean" => 0,
@@ -35,7 +35,7 @@ my %WriteMakefileArgs = (
     "Data::Dumper" => 0,
     "JSON" => 0
   },
-  "VERSION" => "1.152500",
+  "VERSION" => "1.152501",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -52,7 +52,7 @@ my %FallbackPrereqs = (
   "MRO::Compat" => 0,
   "Params::Callbacks" => 0,
   "Scalar::Util" => 0,
-  "Sub::Name" => 0,
+  "Sub::Install" => 0,
   "Test::More" => 0,
   "YAML::Syck" => 0,
   "namespace::clean" => 0,

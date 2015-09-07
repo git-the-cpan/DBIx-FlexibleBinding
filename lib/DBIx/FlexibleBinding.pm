@@ -1,12 +1,10 @@
-package DBIx::FlexibleBinding;
-BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152500'; }
 =head1 NAME
 
-DBIx::FlexibleBinding - Flexible parameter binding and record fetching
+DBIx::FlexibleBinding - Greater flexibility on statement placeholder choice and data binding
 
 =head1 VERSION
 
-version 1.152500
+version 1.152501
 
 =cut
 
@@ -286,7 +284,9 @@ use later as representations of database and statement handles.
 
 =cut
 
-use 5.006;
+package DBIx::FlexibleBinding;
+BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152501'; }
+# ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
 use strict;
 use warnings;
 use Carp qw(confess);
@@ -322,7 +322,7 @@ to this global.
 
 =cut
 
-our $AUTO_BINDING_ENABLED     = 1;
+our $AUTO_BINDING_ENABLED = 1;
 our $PROXIES_GETALL_USING = 'getall_hashref';
 
 
@@ -509,7 +509,7 @@ description of this method.
       or die $dbh->errstr;
 
 A reference to the statement attributes hash is no longer required, even if it's
-empty. If, however, a hash reference is supplied as the first parameter then it 
+empty. If, however, a hash reference is supplied as the first parameter then it
 would be used for that purpose.
 
 =item 2. Prepared statements now may be re-used:
@@ -648,12 +648,12 @@ sub prepare
 Prepares (if necessary) and executes a single statement with the specified data
 bindings and fetches the result set as an array of array references.
 
-The C<getall_arrayref> method accepts optional callbacks for further processing 
+The C<getall_arrayref> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =head3 Examples
 
-=over 
+=over
 
 =item 1. Prepare, execute it then get the results as a reference:
 
@@ -664,9 +664,9 @@ of the results by the caller.
      WHERE regional  = 1
        AND security >= :minimum_security
     //
-    
+
     $systems = $dbh->getall_arrayref($sql, minimum_security => 1.0);
-    
+
     # Returns a structure something like this:
     #
     # [ [ 'Kisogo',      '1' ],
@@ -684,9 +684,9 @@ We'll use the query from Example 1 but have the results returned as a list for
 further processing by the caller.
 
     $sth = $dbh->prepare($sql);
-    
+
     @systems = $dbh->getall_arrayref($sql, minimum_security => 1.0);
-    
+
     for my $system (@systems) {
         printf "%-11s %.1f\n", @$system;
     }
@@ -702,22 +702,22 @@ further processing by the caller.
     # Duripant    1.0
     # Yulai       1.0
 
-=item 3. Re-use a prepared statement, execute it then return modified results as a 
+=item 3. Re-use a prepared statement, execute it then return modified results as a
 reference:
 
-We'll use the query from Example 1 but have the results returned as a list 
-for further processing by a caller who will be using callbacks to modify those 
+We'll use the query from Example 1 but have the results returned as a list
+for further processing by a caller who will be using callbacks to modify those
 results.
 
     $sth = $dbh->prepare($sql);
-    
+
     $systems = $dbh->getall_arrayref($sql, minimum_security => 1.0, callback {
         my ($row) = @_;
         return sprintf("%-11s %.1f\n", @$row);
     });
-    
+
     # Returns a structure something like this:
-    # 
+    #
     # [ 'Kisogo      1.0',
     #   'New Caldari 1.0',
     #   'Amarr       1.0',
@@ -762,12 +762,12 @@ sub getall_arrayref
 Prepares (if necessary) and executes a single statement with the specified data
 bindings and fetches the result set as an array of hash references.
 
-The C<getall_hashref> method accepts optional callbacks for further processing 
+The C<getall_hashref> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =head3 Examples
 
-=over 
+=over
 
 =item 1. Prepare, execute it then get the results as a reference:
 
@@ -778,9 +778,9 @@ of the results by the caller.
      WHERE regional  = 1
        AND security >= :minimum_security
     //
-    
+
     $systems = $dbh->getall_hashref($sql, minimum_security => 1.0);
-    
+
     # Returns a structure something like this:
     #
     # [ { name => 'Kisogo',      security => '1' },
@@ -798,9 +798,9 @@ We'll use the query from Example 1 but have the results returned as a list for
 further processing by the caller.
 
     $sth = $dbh->prepare($sql);
-    
+
     @systems = $dbh->getall_hashref($sql, minimum_security => 1.0);
-    
+
     for my $system (@systems) {
         printf "%-11s %.1f\n", @{$system}{'name', 'security'}; # Hash slice
     }
@@ -816,21 +816,21 @@ further processing by the caller.
     # Duripant    1.0
     # Yulai       1.0
 
-=item 3. Re-use a prepared statement, execute it then return modified results as a 
+=item 3. Re-use a prepared statement, execute it then return modified results as a
 reference:
 
-We'll use the query from Example 1 but have the results returned as a list 
-for further processing by a caller who will be using callbacks to modify those 
+We'll use the query from Example 1 but have the results returned as a list
+for further processing by a caller who will be using callbacks to modify those
 results.
 
     $sth = $dbh->prepare($sql);
-    
+
     $systems = $dbh->getall_hashref($sql, minimum_security => 1.0, callback {
         sprintf("%-11s %.1f\n", @{$_}{'name', 'security'}); # Hash slice
     });
-    
+
     # Returns a structure something like this:
-    # 
+    #
     # [ 'Kisogo      1.0',
     #   'New Caldari 1.0',
     #   'Amarr       1.0',
@@ -869,10 +869,10 @@ sub getall_hashref
     $result = $dbh->getrow_arrayref($statement_string, \%attr, @bind_values);
     $result = $dbh->getrow_arrayref($statement_handle, @bind_values);
 
-Prepares (if necessary) and executes a single statement with the specified data 
+Prepares (if necessary) and executes a single statement with the specified data
 bindings and fetches the first row as an array reference.
 
-The C<getrow_arrayref> method accepts optional callbacks for further processing 
+The C<getrow_arrayref> method accepts optional callbacks for further processing
 of the result by the caller.
 
 =cut
@@ -902,10 +902,10 @@ sub getrow_arrayref
     $result = $dbh->getrow_hashref($statement_string, \%attr, @bind_values);
     $result = $dbh->getrow_hashref($statement_handle, @bind_values);
 
-Prepares (if necessary) and executes a single statement with the specified data 
+Prepares (if necessary) and executes a single statement with the specified data
 bindings and fetches the first row as a hash reference.
 
-The C<getrow_hashref> method accepts optional callbacks for further processing 
+The C<getrow_hashref> method accepts optional callbacks for further processing
 of the result by the caller.
 
 =cut
@@ -1159,7 +1159,7 @@ sub execute
 
 Fetches the entire result set as an array of array references.
 
-The C<getall_arrayref> method accepts optional callbacks for further processing 
+The C<getall_arrayref> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =cut
@@ -1190,7 +1190,7 @@ sub getall_arrayref
 
 Fetches the entire result set as an array of hash references.
 
-The C<getall_hashref> method accepts optional callbacks for further processing 
+The C<getall_hashref> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =cut
@@ -1254,7 +1254,7 @@ sub getrow_arrayref
 Fetches the next row as a hash reference. Returns C<undef> if there are no more
 rows available.
 
-The C<getrow_hashref> method accepts optional callbacks for further processing 
+The C<getrow_hashref> method accepts optional callbacks for further processing
 of the result by the caller.
 
 =cut
@@ -1283,7 +1283,7 @@ package    # Hide from PAUSE
 
 use Carp 'confess';
 use Scalar::Util 'blessed';
-use Sub::Name;
+use Sub::Install ();
 use namespace::clean;
 
 use Test::More;
@@ -1298,9 +1298,8 @@ sub create
 {
     my ( $class, $name, $caller ) = @_;
     $class = ref($class) || $class;
-    no strict 'refs';    ## no critic [TestingAndDebugging::ProhibitNoStrict]
-    *{ $caller . '::' . $name }
-      = subname( $name => sub { $class->handle( $name, @_ ) } );
+    Sub::Install::install_sub(
+            { code => sub { $class->handle( $name, @_ ) }, into => $caller, as => $name } );
     return $class->get($name);
 }
 
@@ -1423,7 +1422,6 @@ our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::StatementProxy;
-
 
 use Carp 'confess';
 

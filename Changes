@@ -1,3 +1,10 @@
+1.152501  2015-09-07 22:37:38+01:00 Europe/London
+
+    - No functional changes; just refactoring to use Sub::Install instead of the
+      shonky pattern I was using to squirrel my methods in others' namespaces.
+    
+    - # ABSTRACT: added
+    
 1.152500  2015-09-07 20:27:24+01:00 Europe/London
 
     - Some minor structural improvements to method implementations here and there.
@@ -12,7 +19,7 @@
 
 1.152491  2015-09-06 20:30:55+01:00 Europe/London
 
-    - Guess who didn't forget to hide embedded packages from PAUSE?
+    - Guess who forgot to hide embedded packages from PAUSE?
     
 1.152490  2015-09-06 20:22:54+01:00 Europe/London
 
