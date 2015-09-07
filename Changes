@@ -1,3 +1,15 @@
+1.152500  2015-09-07 20:27:24+01:00 Europe/London
+
+    - Some minor structural improvements to method implementations here and there.
+    
+    - Some POD expansion and corrections.
+    
+    - Methods with names that match /^processrow_.*$/ now have names beginning 
+      with "getrow_".
+    
+    - Methods with names that match /^processall_.*$/ now have names beginning 
+      with "getall_".
+
 1.152491  2015-09-06 20:30:55+01:00 Europe/London
 
     - Guess who didn't forget to hide embedded packages from PAUSE?

@@ -2,7 +2,7 @@ NAME
     DBIx::FlexibleBinding - Flexible parameter binding and record fetching
 
 VERSION
-    version 1.152491
+    version 1.152500
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of
@@ -40,12 +40,12 @@ SYNOPSIS
         # Fetch and transform rows with a blocking callback to get only the data you
         # want without cluttering the place up with intermediate state ...
         #
-        my @system_names = $sth->processall_hashref(callback { $_->{name} });
+        my @system_names = $sth->getall_hashref(callback { $_->{name} });
 
         ############################################################################
         # SCENARIO 2                                                               #
         # Let's simplify the previous scenario using the database handle's version #
-        # of that processall_hashref method.                                       #
+        # of that getall_hashref method.                                       #
         ############################################################################
 
         use DBIx::FlexibleBinding -alias => 'DFB';
@@ -63,7 +63,7 @@ SYNOPSIS
 
         # Cut out the middle men ...
         #
-        my @system_names = $dbh->processall_hashref(SQL,
+        my @system_names = $dbh->getall_hashref(SQL,
                                                     is_regional => 1,
                                                     minimum_security => 1.0,
                                                     callback { $_->{name} });
@@ -133,13 +133,13 @@ DESCRIPTION
     Four new methods, each available for database and statement handles,
     have been implemented:
 
-    * "processrow_arrayref"
+    * "getrow_arrayref"
 
-    * "processrow_hashref"
+    * "getrow_hashref"
 
-    * "processall_arrayref"
+    * "getall_arrayref"
 
-    * "processall_hashref"
+    * "getall_hashref"
 
     These methods complement DBI's existing fetch methods, providing new
     ways to retrieve and process data.
@@ -267,15 +267,15 @@ PACKAGE GLOBALS
 
     The default setting is "1" (*enabled*).
 
-  $DBIx::FlexibleBinding::PROXIES_PROCESSALL_USING
+  $DBIx::FlexibleBinding::PROXIES_GETALL_USING
     The subroutines created with the "-subs" import option may be used to
     retrieve result sets. By default, any such subroutines delegate that
-    particular task to a method called "processall_hashref", which is
-    provided by this module for both database and statement handles alike.
+    particular task to a method called "getall_hashref", which is provided
+    by this module for both database and statement handles alike.
 
     For reasons of efficiency the developer may prefer array references over
     hash references, in which case they only need assign the value
-    "processall_arrayref" to this global.
+    "getall_arrayref" to this global.
 
 IMPORT TAGS AND OPTIONS
   -alias
@@ -327,36 +327,72 @@ IMPORT TAGS AND OPTIONS
     remainder of scope containing the "use" directive. That is unless "use
     strict 'subs'" or "use strict" appears afterwards.
 
-METHODS ("DBIx::FlexibleBinding")
+CLASS METHODS
   connect
-        $dbh = DBIx::FlexibleBinding->connect($data_source, $username, $password);
-        $dbh = DBIx::FlexibleBinding->connect($data_source,
-                                              $username,
-                                              $password,
-                                              \%attr);
+        $dbh = DBIx::FlexibleBinding->connect($data_source, $user, $pass)
+          or die $DBI::errstr;
+        $dbh = DBIx::FlexibleBinding->connect($data_source, $user, $pass, \%attr)
+          or die $DBI::errstr;
 
     Establishes a database connection, or session, to the requested
     data_source and returns a database handle object if the connection
     succeeds or undef if it does not.
 
-    *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#connect> for a more
-    detailed explanation of how to use this method*.
+    Refer to <http://search.cpan.org/dist/DBI/DBI.pm#connect> for a more
+    detailed description of this method.
 
-METHODS ("DBIx::FlexibleBinding::db")
+DATABASE HANDLE METHODS
   do
-        $rows = $dbh->do($statement_string);
-        $rows = $dbh->do($statement_string, \%attr);
-        $rows = $dbh->do($statement_string, \%attr, @bind_values);
+        $rows = $dbh->do($statement_string) or die $dbh->errstr;
+        $rows = $dbh->do($statement_string, @bind_values) or die $dbh->errstr;
+        $rows = $dbh->do($statement_string, \%attr) or die $dbh->errstr;
+        $rows = $dbh->do($statement_string, \%attr, @bind_values) or die $dbh->errstr;
+        $rows = $dbh->do($statement_handle) or die $dbh->errstr;
+        $rows = $dbh->do($statement_handle, @bind_values) or die $dbh->errstr;
 
-        $rows = $dbh->do($statement_handle);
-        $rows = $dbh->do($statement_handle, @bind_values);
+    Prepares (if necessary) and executes a single statement. Returns the
+    number of rows affected or undef on error. A return value of -1 means
+    the number of rows is not known, not applicable, or not available. When
+    no rows have been affected this method continues the "DBI" tradition of
+    returning 0E0 on successful execution and "undef" on failure.
 
-    Prepare if necessary and execute a single statement. Returns the number
-    of rows affected or undef on error. A return value of -1 means the
-    number of rows is not known, not applicable, or not available.
+    The "do" method accepts optional callbacks for further processing of the
+    result.
 
-    *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#do> for a more
-    detailed explanation of how to use this method*.
+    The "do" implementation provided by this module allows for some minor
+    deviations in usage over the standard "DBI" implementation. In spite of
+    this, the new method may be used just like the original.
+
+    Refer to <http://search.cpan.org/dist/DBI/DBI.pm#do> for a more detailed
+    description of this method.
+
+   Examples
+    1. Statement attributes are now optional:
+            $sql = << '//';
+            UPDATE employees
+               SET salary = :salary
+             WHERE employee_id = :employee_id
+            //
+
+            $dbh->do($sql, employee_id => 52, salary => 35_000)
+              or die $dbh->errstr;
+
+        A reference to the statement attributes hash is no longer required,
+        even if it's empty. If, however, a hash reference is supplied as the
+        first parameter then it would be used for that purpose.
+
+    2. Prepared statements now may be re-used:
+            $sth = $dbh->prepare(<< '//');
+            UPDATE employees
+               SET salary = ?
+             WHERE employee_id = ?
+            //
+
+            $dbh->do($sth, 35_000, 52) or die $dbh->errstr;
+
+        A prepared statement may also be used in lieu of a statement string.
+        In such cases, referencing a statement attributes hash is neither
+        required nor expected.
 
   prepare
         $sth = $dbh->prepare($statement_string);
@@ -365,92 +401,224 @@ METHODS ("DBIx::FlexibleBinding::db")
     Prepares a statement for later execution by the database engine and
     returns a reference to a statement handle object.
 
-    *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#prepare> for a more
-    detailed explanation of how to use this method*.
+    Refer to <http://search.cpan.org/dist/DBI/DBI.pm#prepare> for a more
+    detailed description of this method.
 
-  processall_arrayref *(Database Handles)*
-        $array_of_values = $dbh->processall_arrayref($statement_string,
-                                                     \%optional_attr,
-                                                     @optional_data_bindings,
-                                                     @optional_callbacks);
+   Examples
+    1. Prepare a statement using positional placeholders:
+            $sql = << '//';
+            UPDATE employees
+               SET salary = ?
+             WHERE employee_id = ?
+            //
 
-        @array_of_values = $dbh->processall_arrayref($statement_string,
-                                                     \%optional_attr,
-                                                     @optional_data_bindings,
-                                                     @optional_callbacks);
+            $sth = $dbh->prepare($sql);
 
-        $array_of_values = $dbh->processall_arrayref($statement_handle,
-                                                     @optional_data_bindings,
-                                                     @optional_callbacks);
+    2. Prepare a statement using named placeholders:
+        *(Yes, even for those MySQL connections!)*
 
-        @array_of_values = $dbh->processall_arrayref($statement_handle,
-                                                     @optional_data_bindings,
-                                                     @optional_callbacks);
+            $sql = << '//';
+            UPDATE employees
+               SET salary = :salary
+             WHERE employee_id = :employee_id
+            //
 
-    Prepares the statement if necessary, executes it with the specified data
-    bindings, and fetches all the rows in the result set.
+            $sth = $dbh->prepare($sql);
 
-    Though presented initially as an array reference, the value of each row
-    may be transformed, by the caller, with the aid of callbacks.
+  getall_arrayref *(Database Handles)*
+        $results = $dbh->getall_arrayref($statement_string, @bind_values);
+        @results = $dbh->getall_arrayref($statement_string, @bind_values);
+        $results = $dbh->getall_arrayref($statement_string, \%attr, @bind_values);
+        @results = $dbh->getall_arrayref($statement_string, \%attr, @bind_values);
+        $results = $dbh->getall_arrayref($statement_handle, @bind_values);
+        @results = $dbh->getall_arrayref($statement_handle, @bind_values);
 
-  processall_hashref *(Database Handles)*
-        $array_of_values = $dbh->processall_hashref($statement_string,
-                                                    \%optional_attr,
-                                                    @optional_data_bindings,
-                                                    @optional_callbacks);
+    Prepares (if necessary) and executes a single statement with the
+    specified data bindings and fetches the result set as an array of array
+    references.
 
-        @array_of_values = $dbh->processall_hashref($statement_string,
-                                                    \%optional_attr,
-                                                    @optional_data_bindings,
-                                                    @optional_callbacks);
+    The "getall_arrayref" method accepts optional callbacks for further
+    processing of the results by the caller.
 
-        $array_of_values = $dbh->processall_hashref($statement_handle,
-                                                    @optional_data_bindings,
-                                                    @optional_callbacks);
+   Examples
+    1. Prepare, execute it then get the results as a reference:
+            $sql = << '//';
+            SELECT solarSystemName AS name
+                 , security
+              FROM mapsolarsystems
+             WHERE regional  = 1
+               AND security >= :minimum_security
+            //
+    
+            $systems = $dbh->getall_arrayref($sql, minimum_security => 1.0);
+    
+            # Returns a structure something like this:
+            #
+            # [ [ 'Kisogo',      '1' ],
+            #   [ 'New Caldari', '1' ],
+            #   [ 'Amarr',       '1' ],
+            #   [ 'Bourynes',    '1' ],
+            #   [ 'Ryddinjorn',  '1' ],
+            #   [ 'Luminaire',   '1' ],
+            #   [ 'Duripant',    '1' ],
+            #   [ 'Yulai',       '1' ] ]
 
-        @array_of_values = $dbh->processall_hashref($statement_handle,
-                                                    @optional_data_bindings,
-                                                    @optional_callbacks);
+    2. Re-use a prepared statement, execute it then return the results as a
+    list:
+        We'll use the query from Example 1 but have the results returned as
+        a list for further processing by the caller.
 
-    Prepares the statement if necessary, executes it with the specified data
-    bindings, and fetches all the rows in the result set.
+            $sth = $dbh->prepare($sql);
+    
+            @systems = $dbh->getall_arrayref($sql, minimum_security => 1.0);
+    
+            for my $system (@systems) {
+                printf "%-11s %.1f\n", @$system;
+            }
 
-    Though presented initially as a hash reference, the value of each row
-    may be transformed, by the caller, with the aid of callbacks.
+            # Output:
+            #
+            # Kisogo      1.0
+            # New Caldari 1.0
+            # Amarr       1.0
+            # Bourynes    1.0
+            # Ryddinjorn  1.0
+            # Luminaire   1.0
+            # Duripant    1.0
+            # Yulai       1.0
 
-  processrow_arrayref *(Database Handles)*
-        $value = $dbh->processrow_arrayref($statement_string,
-                                           \%optional_attr,
-                                           @optional_data_bindings,
-                                           @optional_callbacks);
+    3. Re-use a prepared statement, execute it then return modified results
+    as a reference:
+        We'll use the query from Example 1 but have the results returned as
+        a list for further processing by a caller who will be using
+        callbacks to modify those results.
 
-        $value = $dbh->processrow_arrayref($statement_handle,
-                                           @optional_data_bindings,
-                                           @optional_callbacks);
+            $sth = $dbh->prepare($sql);
+    
+            $systems = $dbh->getall_arrayref($sql, minimum_security => 1.0, callback {
+                my ($row) = @_;
+                return sprintf("%-11s %.1f\n", @$row);
+            });
+    
+            # Returns a structure something like this:
+            # 
+            # [ 'Kisogo      1.0',
+            #   'New Caldari 1.0',
+            #   'Amarr       1.0',
+            #   'Bourynes    1.0',
+            #   'Ryddinjorn  1.0',
+            #   'Luminaire   1.0',
+            #   'Duripant    1.0',
+            #   'Yulai       1.0' ]
 
-    Prepares the statement (if necessary) and executes it immediately with
-    the specified data bindings, and fetches one and only one row.
+  getall_hashref *(Database Handles)*
+        $results = $dbh->getall_hashref($statement_string, @bind_values);
+        @results = $dbh->getall_hashref($statement_string, @bind_values);
+        $results = $dbh->getall_hashref($statement_string, \%attr, @bind_values);
+        @results = $dbh->getall_hashref($statement_string, \%attr, @bind_values);
+        $results = $dbh->getall_hashref($statement_handle, @bind_values);
+        @results = $dbh->getall_hashref($statement_handle, @bind_values);
 
-    Though presented initially as an array reference, the value of that row
-    may be transformed, by the caller, with the aid of callbacks.
+    Prepares (if necessary) and executes a single statement with the
+    specified data bindings and fetches the result set as an array of hash
+    references.
 
-  processrow_hashref *(Database Handles)*
-        $value = $dbh->processrow_hashref($statement_string,
-                                          \%optional_attr,
-                                          @optional_data_bindings,
-                                          @optional_callbacks);
+    The "getall_hashref" method accepts optional callbacks for further
+    processing of the results by the caller.
 
-        $value = $dbh->processrow_hashref($statement_handle,
-                                          @optional_data_bindings,
-                                          @optional_callbacks);
+   Examples
+    1. Prepare, execute it then get the results as a reference:
+            $sql = << '//';
+            SELECT solarSystemName AS name
+                 , security
+              FROM mapsolarsystems
+             WHERE regional  = 1
+               AND security >= :minimum_security
+            //
+    
+            $systems = $dbh->getall_hashref($sql, minimum_security => 1.0);
+    
+            # Returns a structure something like this:
+            #
+            # [ { name => 'Kisogo',      security => '1' },
+            #   { name => 'New Caldari', security => '1' },
+            #   { name => 'Amarr',       security => '1' },
+            #   { name => 'Bourynes',    security => '1' },
+            #   { name => 'Ryddinjorn',  security => '1' },
+            #   { name => 'Luminaire',   security => '1' },
+            #   { name => 'Duripant',    security => '1' },
+            #   { name => 'Yulai',       security => '1' } ]
 
-    Prepares the statement (if necessary) and executes it immediately with
-    the specified data bindings, and fetches one and only one row.
+    2. Re-use a prepared statement, execute it then return the results as a
+    list:
+        We'll use the query from Example 1 but have the results returned as
+        a list for further processing by the caller.
 
-    Though presented initially as a hash reference, that value of that row
-    may be transformed , by the caller, with the aid of callbacks.
+            $sth = $dbh->prepare($sql);
+    
+            @systems = $dbh->getall_hashref($sql, minimum_security => 1.0);
+    
+            for my $system (@systems) {
+                printf "%-11s %.1f\n", @{$system}{'name', 'security'}; # Hash slice
+            }
 
-METHODS ("DBIx::FlexibleBinding::st")
+            # Output:
+            #
+            # Kisogo      1.0
+            # New Caldari 1.0
+            # Amarr       1.0
+            # Bourynes    1.0
+            # Ryddinjorn  1.0
+            # Luminaire   1.0
+            # Duripant    1.0
+            # Yulai       1.0
+
+    3. Re-use a prepared statement, execute it then return modified results
+    as a reference:
+        We'll use the query from Example 1 but have the results returned as
+        a list for further processing by a caller who will be using
+        callbacks to modify those results.
+
+            $sth = $dbh->prepare($sql);
+    
+            $systems = $dbh->getall_hashref($sql, minimum_security => 1.0, callback {
+                sprintf("%-11s %.1f\n", @{$_}{'name', 'security'}); # Hash slice
+            });
+    
+            # Returns a structure something like this:
+            # 
+            # [ 'Kisogo      1.0',
+            #   'New Caldari 1.0',
+            #   'Amarr       1.0',
+            #   'Bourynes    1.0',
+            #   'Ryddinjorn  1.0',
+            #   'Luminaire   1.0',
+            #   'Duripant    1.0',
+            #   'Yulai       1.0' ]
+
+  getrow_arrayref *(Database Handles)*
+        $result = $dbh->getrow_arrayref($statement_string, @bind_values);
+        $result = $dbh->getrow_arrayref($statement_string, \%attr, @bind_values);
+        $result = $dbh->getrow_arrayref($statement_handle, @bind_values);
+
+    Prepares (if necessary) and executes a single statement with the
+    specified data bindings and fetches the first row as an array reference.
+
+    The "getrow_arrayref" method accepts optional callbacks for further
+    processing of the result by the caller.
+
+  getrow_hashref *(Database Handles)*
+        $result = $dbh->getrow_hashref($statement_string, @bind_values);
+        $result = $dbh->getrow_hashref($statement_string, \%attr, @bind_values);
+        $result = $dbh->getrow_hashref($statement_handle, @bind_values);
+
+    Prepares (if necessary) and executes a single statement with the
+    specified data bindings and fetches the first row as a hash reference.
+
+    The "getrow_hashref" method accepts optional callbacks for further
+    processing of the result by the caller.
+
+STATEMENT HANDLE METHODS
   auto_bind
         $sth->auto_bind($boolean);
         $state = $sth->auto_bind();
@@ -517,39 +685,41 @@ METHODS ("DBIx::FlexibleBinding::st")
     *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#execute> for a more
     detailed explanation of how to use this method*.
 
-  processall_arrayref *(Statement Handles)*
-        $array_of_values = $sth->processall_arrayref(@optional_callbacks);
-        @array_of_values = $sth->processall_arrayref(@optional_callbacks);
+  getall_arrayref *(Statement Handles)*
+        $results = $sth->getall_arrayref();
+        @results = $sth->getall_arrayref();
 
-    Fetches the entire result set.
+    Fetches the entire result set as an array of array references.
 
-    Though presented initially as an array reference, the value of each row
-    may be transformed, by the caller, with the aid of callbacks.
+    The "getall_arrayref" method accepts optional callbacks for further
+    processing of the results by the caller.
 
-  processall_hashref *(Statement Handles)*
-        $array_of_values = $sth->processall_hashref(@optional_callbacks);
-        @array_of_values = $sth->processall_hashref(@optional_callbacks);
+  getall_hashref *(Statement Handles)*
+        $results = $sth->getall_hashref();
+        @results = $sth->getall_hashref();
 
-    Fetches the entire result set.
+    Fetches the entire result set as an array of hash references.
 
-    Though presented initially as an hash reference, the value of each row
-    may be transformed, by the caller, with the aid of callbacks.
+    The "getall_hashref" method accepts optional callbacks for further
+    processing of the results by the caller.
 
-  processrow_arrayref *(Statement Handles)*
-        $value = $sth->processrow_arrayref(@optional_callbacks);
+  getrow_arrayref *(Statement Handles)*
+        $result = $sth->getrow_arrayref();
 
-    Fetches the next row of a result set if one exists.
+    Fetches the next row as an array reference. Returns "undef" if there are
+    no more rows available.
 
-    Though presented initially as an array reference, the value of that row
-    may be transformed, by the caller, with the aid of callbacks.
+    The "getrow_arrayref" method accepts optional callbacks for further
+    processing of the result by the caller.
 
-  processrow_hashref *(Statement Handles)*
-        $value = $sth->processrow_hashref(@optional_callbacks);
+  getrow_hashref *(Statement Handles)*
+        $result = $sth->getrow_hashref();
 
-    Fetches the next row of a result set if one exists.
+    Fetches the next row as a hash reference. Returns "undef" if there are
+    no more rows available.
 
-    Though presented initially as an hash reference, the value of that row
-    may be transformed, by the caller, with the aid of callbacks.
+    The "getrow_hashref" method accepts optional callbacks for further
+    processing of the result by the caller.
 
 EXPORTS
     The following symbols are exported by default:

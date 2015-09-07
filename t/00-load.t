@@ -358,28 +358,28 @@ EOF
             {
                 my $sth = $dbh->prepare($sql);
                 $sth->execute();
-                my $result = $sth->processrow_arrayref( callback { $_->[0] } );
-                is( $result, 7929, 'prepare, execute, processrow_arrayref (sth)' );
+                my $result = $sth->getrow_arrayref( callback { $_->[0] } );
+                is( $result, 7929, 'prepare, execute, getrow_arrayref (sth)' );
             }
 
             {
                 my $sth = $dbh->prepare($sql);
                 $sth->execute();
-                my $result = $sth->processrow_hashref( callback { $_->{count} } );
-                is( $result, 7929, 'prepare, execute, processrow_hashref (sth)' );
+                my $result = $sth->getrow_hashref( callback { $_->{count} } );
+                is( $result, 7929, 'prepare, execute, getrow_hashref (sth)' );
             }
 
             {
                 my $sth = $dbh->prepare($sql);
                 $sth->execute();
-                my $result = $sth->processall_arrayref( callback { $_->[0] } );
-                is_deeply( $result, [7929], 'prepare, execute, processall_arrayref (sth)' );
+                my $result = $sth->getall_arrayref( callback { $_->[0] } );
+                is_deeply( $result, [7929], 'prepare, execute, getall_arrayref (sth)' );
             }
 
             {
                 my $sth = $dbh->prepare($sql);
                 $sth->execute();
-                my $result = $sth->processall_hashref( callback { $_->{count} } );
+                my $result = $sth->getall_hashref( callback { $_->{count} } );
                 is_deeply( $result, [7929], 'prepare, execute, fetchall_hashref (sth)' );
             }
 
@@ -409,23 +409,23 @@ EOF
             }
 
             {
-                my $result = $dbh->processrow_arrayref( $sql, callback { $_->[0] } );
-                is( $result, 7929, 'processrow_arrayref (dbh)' );
+                my $result = $dbh->getrow_arrayref( $sql, callback { $_->[0] } );
+                is( $result, 7929, 'getrow_arrayref (dbh)' );
             }
 
             {
-                my $result = $dbh->processrow_hashref( $sql, callback { $_->{count} } );
-                is( $result, 7929, 'processrow_hashref (dbh)' );
+                my $result = $dbh->getrow_hashref( $sql, callback { $_->{count} } );
+                is( $result, 7929, 'getrow_hashref (dbh)' );
             }
 
             {
-                my $result = $dbh->processall_arrayref( $sql, callback { $_->[0] } );
-                is_deeply( $result, [7929], 'processall_arrayref (dbh)' );
+                my $result = $dbh->getall_arrayref( $sql, callback { $_->[0] } );
+                is_deeply( $result, [7929], 'getall_arrayref (dbh)' );
             }
 
             {
-                my $result = $dbh->processall_hashref( $sql, callback { $_->{count} } );
-                is_deeply( $result, [7929], 'processall_hashref (dbh)' );
+                my $result = $dbh->getall_hashref( $sql, callback { $_->{count} } );
+                is_deeply( $result, [7929], 'getall_hashref (dbh)' );
             }
 
             # Now some slightly funkier tests...
@@ -455,7 +455,7 @@ EOF
                             [ 'Yulai',       '1' ]
                 ];
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql, 1, 1.0, callback
                     {
                         my $row = $_;
@@ -473,7 +473,7 @@ EOF
                 diag "variables as a simple list.";
                 $sql   = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :1 AND security >= :2';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql, 1, 1.0, callback
                     {
                         my $row = $_;
@@ -491,7 +491,7 @@ EOF
                 diag "variables as an anonymous list.";
                 $sql   = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :1 AND security >= :2';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql, [ 1, 1.0 ], callback
                     {
                         my $row = $_;
@@ -509,7 +509,7 @@ EOF
                 diag "variables as a simple list.";
                 $sql   = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = ?1 AND security >= ?2';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql, 1, 1.0, callback
                     {
                         my $row = $_;
@@ -527,7 +527,7 @@ EOF
                 diag "variables as an anonymous list.";
                 $sql   = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = ?1 AND security >= ?2';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql, [ 1, 1.0 ], callback
                     {
                         my $row = $_;
@@ -545,7 +545,7 @@ EOF
                 diag "variables as a simple list.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :regional AND security >= :security';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql,
                     regional => 1,
                     security => 1.0,
@@ -566,7 +566,7 @@ EOF
                 diag "variables as an anonymous list.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :regional AND security >= :security';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql, [ regional => 1, security => 1.0 ], callback
                     {
                         my $row = $_;
@@ -584,7 +584,7 @@ EOF
                 diag "variables as an anonymous hash.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :regional AND security >= :security';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql, {}, { regional => 1, security => 1.0 }, callback    # Extra hashref needed for statement
                     {                                                         # attribute when presenting bind values as
                         my $row = $_;                                         # a hashref (why we have the square bracket
@@ -602,7 +602,7 @@ EOF
                 diag "variables as a simple list.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = @regional AND security >= @security';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql,
                     '@regional' => 1,
                     '@security' => 1.0,
@@ -623,7 +623,7 @@ EOF
                 diag "variables as an anonymous list.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = @regional AND security >= @security';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql, [ '@regional' => 1, '@security' => 1.0 ], callback
                     {
                         my $row = $_;
@@ -641,7 +641,7 @@ EOF
                 diag "variables as an anonymous hash.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = @regional AND security >= @security';
                 $count = 0;
-                $result = $dbh->processall_arrayref(
+                $result = $dbh->getall_arrayref(
                     $sql, {}, { '@regional' => 1, '@security' => 1.0 }, callback    # Extra hashref needed for statement
                     {                                                               # attribute when presenting bind values as
                         my $row = $_;                                               # a hashref (why we have the square bracket
