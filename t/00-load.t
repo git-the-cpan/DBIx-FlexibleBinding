@@ -372,14 +372,14 @@ EOF
             {
                 my $sth = $dbh->prepare($sql);
                 $sth->execute();
-                my $result = $sth->getall_arrayref( callback { $_->[0] } );
-                is_deeply( $result, [7929], 'prepare, execute, getall_arrayref (sth)' );
+                my $result = $sth->getrows_arrayref( callback { $_->[0] } );
+                is_deeply( $result, [7929], 'prepare, execute, getrows_arrayref (sth)' );
             }
 
             {
                 my $sth = $dbh->prepare($sql);
                 $sth->execute();
-                my $result = $sth->getall_hashref( callback { $_->{count} } );
+                my $result = $sth->getrows_hashref( callback { $_->{count} } );
                 is_deeply( $result, [7929], 'prepare, execute, fetchall_hashref (sth)' );
             }
 
@@ -419,13 +419,13 @@ EOF
             }
 
             {
-                my $result = $dbh->getall_arrayref( $sql, callback { $_->[0] } );
-                is_deeply( $result, [7929], 'getall_arrayref (dbh)' );
+                my $result = $dbh->getrows_arrayref( $sql, callback { $_->[0] } );
+                is_deeply( $result, [7929], 'getrows_arrayref (dbh)' );
             }
 
             {
-                my $result = $dbh->getall_hashref( $sql, callback { $_->{count} } );
-                is_deeply( $result, [7929], 'getall_hashref (dbh)' );
+                my $result = $dbh->getrows_hashref( $sql, callback { $_->{count} } );
+                is_deeply( $result, [7929], 'getrows_hashref (dbh)' );
             }
 
             # Now some slightly funkier tests...
@@ -437,12 +437,6 @@ EOF
                 my $count;
                 my $expect;
 
-                diag "";
-                diag "Using positional placeholders, fetch the names and ";
-                diag "security ratings of regional systems whose security";
-                diag "rating is 1.0 or more. We're expecting 8 tuples in ";
-                diag "the result set. ";
-                diag "";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = ? AND security >= ?';
                 $expect = [
                             [ 'Kisogo',      '1' ],
@@ -455,7 +449,7 @@ EOF
                             [ 'Yulai',       '1' ]
                 ];
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql, 1, 1.0, callback
                     {
                         my $row = $_;
@@ -463,17 +457,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );    # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );    # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );    # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag ":NUMBER placeholder scheme while presenting bind";
-                diag "variables as a simple list.";
                 $sql   = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :1 AND security >= :2';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql, 1, 1.0, callback
                     {
                         my $row = $_;
@@ -481,17 +470,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );    # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );    # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );    # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag ":NUMBER placeholder scheme while presenting bind";
-                diag "variables as an anonymous list.";
                 $sql   = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :1 AND security >= :2';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql, [ 1, 1.0 ], callback
                     {
                         my $row = $_;
@@ -499,17 +483,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );    # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );    # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );    # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag "?NUMBER placeholder scheme while presenting bind";
-                diag "variables as a simple list.";
                 $sql   = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = ?1 AND security >= ?2';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql, 1, 1.0, callback
                     {
                         my $row = $_;
@@ -517,17 +496,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );    # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );    # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );    # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag "?NUMBER placeholder scheme while presenting bind";
-                diag "variables as an anonymous list.";
                 $sql   = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = ?1 AND security >= ?2';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql, [ 1, 1.0 ], callback
                     {
                         my $row = $_;
@@ -535,17 +509,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );    # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );    # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );    # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag ":NAME placeholder scheme while presenting bind";
-                diag "variables as a simple list.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :regional AND security >= :security';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql,
                     regional => 1,
                     security => 1.0,
@@ -556,17 +525,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );    # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );    # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );    # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag ":NAME placeholder scheme while presenting bind";
-                diag "variables as an anonymous list.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :regional AND security >= :security';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql, [ regional => 1, security => 1.0 ], callback
                     {
                         my $row = $_;
@@ -574,17 +538,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );    # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );    # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );    # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag ":NAME placeholder scheme while presenting bind";
-                diag "variables as an anonymous hash.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :regional AND security >= :security';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql, {}, { regional => 1, security => 1.0 }, callback    # Extra hashref needed for statement
                     {                                                         # attribute when presenting bind values as
                         my $row = $_;                                         # a hashref (why we have the square bracket
@@ -592,17 +551,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );                                  # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );                      # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );                      # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag "\@NAME placeholder scheme while presenting bind";
-                diag "variables as a simple list.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = @regional AND security >= @security';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql,
                     '@regional' => 1,
                     '@security' => 1.0,
@@ -613,17 +567,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );    # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );    # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );    # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag "\@NAME placeholder scheme while presenting bind";
-                diag "variables as an anonymous list.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = @regional AND security >= @security';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql, [ '@regional' => 1, '@security' => 1.0 ], callback
                     {
                         my $row = $_;
@@ -631,17 +580,12 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );    # Callback was called 8 times
                 is_deeply( $result, $expect, 'result' );    # Good result!
 
-                diag "";
-                diag "Perform the same checks again, this time using the ";
-                diag "\@NAME placeholder scheme while presenting bind";
-                diag "variables as an anonymous hash.";
                 $sql = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = @regional AND security >= @security';
                 $count = 0;
-                $result = $dbh->getall_arrayref(
+                $result = $dbh->getrows_arrayref(
                     $sql, {}, { '@regional' => 1, '@security' => 1.0 }, callback    # Extra hashref needed for statement
                     {                                                               # attribute when presenting bind values as
                         my $row = $_;                                               # a hashref (why we have the square bracket
@@ -649,9 +593,8 @@ EOF
                         return $row;
                     }
                 );
-                diag "";
                 is( $count, 8, 'callback' );                                        # Callback was called 8 times
-                is_deeply( $result, $expect, 'result' );                            # Good result!
+                is_deeply( $result, $expect, 'getrows_arrayref' );                            # Good result!
 
                 $sql = 'SELECT solarSystemName AS name, security FROM mapsolarsystems WHERE regional = :regional AND security >= :security';
                 $expect = [
@@ -666,28 +609,12 @@ EOF
                 ];
                 my $sth = $dbh->prepare($sql);
                 statement($sth);
-                is(statement(), $sth, 'statement proxy assignment');
+                is(statement(), $sth, 'statement handle proxy assignment');
                 $result = statement(regional => 1, security => 1.0);
-                is_deeply( $result, $expect, 'statement proxy execution' );                            # statement proxies work!
+                is_deeply( $result, $expect, 'statement handle proxy execution' );                            # statement proxies work!
             }
 
             $dbh->disconnect();
-
-            unless ( $ENV{TEST_NO_CLEANUP} )
-            {
-                if ( $driver eq 'CSV' )
-                {
-                    unlink './mapsolarsystems';
-                }
-                elsif ( $driver eq 'SQLite' )
-                {
-                    unlink './test.db';
-                }
-                else
-                {
-                    ;    # No physical files to clean up
-                }
-            }
         }
     }
 }

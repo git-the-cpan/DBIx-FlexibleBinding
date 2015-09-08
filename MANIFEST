@@ -10,6 +10,9 @@ cpanfile
 lib/DBIx/FlexibleBinding.pm
 mapsolarsystems.json
 t/00-load.t
+t/01-execute.t
+t/02-iterate.t
+t/03-iterate.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t

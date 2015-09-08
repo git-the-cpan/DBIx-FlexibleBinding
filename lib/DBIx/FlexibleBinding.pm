@@ -1,10 +1,11 @@
+
 =head1 NAME
 
 DBIx::FlexibleBinding - Greater flexibility on statement placeholder choice and data binding
 
 =head1 VERSION
 
-version 1.152501
+version 1.152510
 
 =cut
 
@@ -44,12 +45,12 @@ ways to interact with datasources, while improving general readability.
     # Fetch and transform rows with a blocking callback to get only the data you
     # want without cluttering the place up with intermediate state ...
     #
-    my @system_names = $sth->getall_hashref(callback { $_->{name} });
+    my @system_names = $sth->getrows_hashref(callback { $_->{name} });
 
     ############################################################################
     # SCENARIO 2                                                               #
     # Let's simplify the previous scenario using the database handle's version #
-    # of that getall_hashref method.                                       #
+    # of that getrows_hashref method.                                       #
     ############################################################################
 
     use DBIx::FlexibleBinding -alias => 'DFB';
@@ -67,7 +68,7 @@ ways to interact with datasources, while improving general readability.
 
     # Cut out the middle men ...
     #
-    my @system_names = $dbh->getall_hashref(SQL,
+    my @system_names = $dbh->getrows_hashref(SQL,
                                                 is_regional => 1,
                                                 minimum_security => 1.0,
                                                 callback { $_->{name} });
@@ -152,9 +153,9 @@ been implemented:
 
 =item * C<getrow_hashref>
 
-=item * C<getall_arrayref>
+=item * C<getrows_arrayref>
 
-=item * C<getall_hashref>
+=item * C<getrows_hashref>
 
 =back
 
@@ -284,8 +285,9 @@ use later as representations of database and statement handles.
 
 =cut
 
+
 package DBIx::FlexibleBinding;
-BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152501'; }
+BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152510'; }
 # ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
 use strict;
 use warnings;
@@ -309,21 +311,22 @@ or disabled globally.
 
 The default setting is C<"1"> (I<enabled>).
 
-=head2 $DBIx::FlexibleBinding::PROXIES_GETALL_USING
+=head2 $DBIx::FlexibleBinding::GETROWS_USING
 
 The subroutines created with the C<-subs> import option may be used to
 retrieve result sets. By default, any such subroutines delegate that particular
-task to a method called C<"getall_hashref">, which is provided by this module
+task to a method called C<"getrows_hashref">, which is provided by this module
 for both database and statement handles alike.
 
 For reasons of efficiency the developer may prefer array references over hash
-references, in which case they only need assign the value C<"getall_arrayref">
+references, in which case they only need assign the value C<"getrows_arrayref">
 to this global.
 
 =cut
 
 our $AUTO_BINDING_ENABLED = 1;
-our $PROXIES_GETALL_USING = 'getall_hashref';
+our $GETROWS_USING        = 'getrows_hashref';
+our $GETROW_USING         = 'getrow_hashref';
 
 
 sub _dbix_set_err
@@ -493,7 +496,7 @@ of this, the new method may be used just like the original.
 Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#do> for a more detailed
 description of this method.
 
-=head3 Examples
+B<Examples>
 
 =over
 
@@ -569,7 +572,7 @@ reference to a statement handle object.
 Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#prepare> for a more detailed
 description of this method.
 
-=head3 Examples
+B<Examples>
 
 =over
 
@@ -636,22 +639,22 @@ sub prepare
 }
 
 
-=head2 getall_arrayref I<(Database Handles)>
+=head2 getrows_arrayref I<(database handles)>
 
-    $results = $dbh->getall_arrayref($statement_string, @bind_values);
-    @results = $dbh->getall_arrayref($statement_string, @bind_values);
-    $results = $dbh->getall_arrayref($statement_string, \%attr, @bind_values);
-    @results = $dbh->getall_arrayref($statement_string, \%attr, @bind_values);
-    $results = $dbh->getall_arrayref($statement_handle, @bind_values);
-    @results = $dbh->getall_arrayref($statement_handle, @bind_values);
+    $results = $dbh->getrows_arrayref($statement_string, @bind_values);
+    @results = $dbh->getrows_arrayref($statement_string, @bind_values);
+    $results = $dbh->getrows_arrayref($statement_string, \%attr, @bind_values);
+    @results = $dbh->getrows_arrayref($statement_string, \%attr, @bind_values);
+    $results = $dbh->getrows_arrayref($statement_handle, @bind_values);
+    @results = $dbh->getrows_arrayref($statement_handle, @bind_values);
 
 Prepares (if necessary) and executes a single statement with the specified data
 bindings and fetches the result set as an array of array references.
 
-The C<getall_arrayref> method accepts optional callbacks for further processing
+The C<getrows_arrayref> method accepts optional callbacks for further processing
 of the results by the caller.
 
-=head3 Examples
+B<Examples>
 
 =over
 
@@ -665,7 +668,7 @@ of the results by the caller.
        AND security >= :minimum_security
     //
 
-    $systems = $dbh->getall_arrayref($sql, minimum_security => 1.0);
+    $systems = $dbh->getrows_arrayref($sql, minimum_security => 1.0);
 
     # Returns a structure something like this:
     #
@@ -685,7 +688,7 @@ further processing by the caller.
 
     $sth = $dbh->prepare($sql);
 
-    @systems = $dbh->getall_arrayref($sql, minimum_security => 1.0);
+    @systems = $dbh->getrows_arrayref($sql, minimum_security => 1.0);
 
     for my $system (@systems) {
         printf "%-11s %.1f\n", @$system;
@@ -711,7 +714,7 @@ results.
 
     $sth = $dbh->prepare($sql);
 
-    $systems = $dbh->getall_arrayref($sql, minimum_security => 1.0, callback {
+    $systems = $dbh->getrows_arrayref($sql, minimum_security => 1.0, callback {
         my ($row) = @_;
         return sprintf("%-11s %.1f\n", @$row);
     });
@@ -732,7 +735,7 @@ results.
 =cut
 
 
-sub getall_arrayref
+sub getrows_arrayref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
 
@@ -747,25 +750,25 @@ sub getall_arrayref
     $sth->execute(@bind_values);
     return if $sth->err;
 
-    return $sth->getall_arrayref($callbacks);
+    return $sth->getrows_arrayref($callbacks);
 }
 
-=head2 getall_hashref I<(Database Handles)>
+=head2 getrows_hashref I<(database handles)>
 
-    $results = $dbh->getall_hashref($statement_string, @bind_values);
-    @results = $dbh->getall_hashref($statement_string, @bind_values);
-    $results = $dbh->getall_hashref($statement_string, \%attr, @bind_values);
-    @results = $dbh->getall_hashref($statement_string, \%attr, @bind_values);
-    $results = $dbh->getall_hashref($statement_handle, @bind_values);
-    @results = $dbh->getall_hashref($statement_handle, @bind_values);
+    $results = $dbh->getrows_hashref($statement_string, @bind_values);
+    @results = $dbh->getrows_hashref($statement_string, @bind_values);
+    $results = $dbh->getrows_hashref($statement_string, \%attr, @bind_values);
+    @results = $dbh->getrows_hashref($statement_string, \%attr, @bind_values);
+    $results = $dbh->getrows_hashref($statement_handle, @bind_values);
+    @results = $dbh->getrows_hashref($statement_handle, @bind_values);
 
 Prepares (if necessary) and executes a single statement with the specified data
 bindings and fetches the result set as an array of hash references.
 
-The C<getall_hashref> method accepts optional callbacks for further processing
+The C<getrows_hashref> method accepts optional callbacks for further processing
 of the results by the caller.
 
-=head3 Examples
+B<Examples>
 
 =over
 
@@ -779,7 +782,7 @@ of the results by the caller.
        AND security >= :minimum_security
     //
 
-    $systems = $dbh->getall_hashref($sql, minimum_security => 1.0);
+    $systems = $dbh->getrows_hashref($sql, minimum_security => 1.0);
 
     # Returns a structure something like this:
     #
@@ -799,7 +802,7 @@ further processing by the caller.
 
     $sth = $dbh->prepare($sql);
 
-    @systems = $dbh->getall_hashref($sql, minimum_security => 1.0);
+    @systems = $dbh->getrows_hashref($sql, minimum_security => 1.0);
 
     for my $system (@systems) {
         printf "%-11s %.1f\n", @{$system}{'name', 'security'}; # Hash slice
@@ -825,7 +828,7 @@ results.
 
     $sth = $dbh->prepare($sql);
 
-    $systems = $dbh->getall_hashref($sql, minimum_security => 1.0, callback {
+    $systems = $dbh->getrows_hashref($sql, minimum_security => 1.0, callback {
         sprintf("%-11s %.1f\n", @{$_}{'name', 'security'}); # Hash slice
     });
 
@@ -845,7 +848,7 @@ results.
 =cut
 
 
-sub getall_hashref
+sub getrows_hashref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
 
@@ -860,10 +863,34 @@ sub getall_hashref
     $sth->execute(@bind_values);
     return if $sth->err;
 
-    return $sth->getall_hashref($callbacks);
+    return $sth->getrows_hashref($callbacks);
 }
 
-=head2 getrow_arrayref I<(Database Handles)>
+
+=head2 getrows I<(database handles)>
+
+    $results = $dbh->getrows($statement_string, @bind_values);
+    @results = $dbh->getrows($statement_string, @bind_values);
+    $results = $dbh->getrows($statement_string, \%attr, @bind_values);
+    @results = $dbh->getrows($statement_string, \%attr, @bind_values);
+    $results = $dbh->getrows($statement_handle, @bind_values);
+    @results = $dbh->getrows$statement_handle, @bind_values);
+
+Prepares (if necessary) and executes a single statement with the specified data
+bindings and fetches the result set as an array of hash references.
+
+The C<getrows_hashref> method accepts optional callbacks for further processing
+of the results by the caller.
+
+=cut
+
+
+sub getrows
+{
+    goto &$DBIx::FlexibleBinding::GETROWS_USING;
+}
+
+=head2 getrow_arrayref I<(database handles)>
 
     $result = $dbh->getrow_arrayref($statement_string, @bind_values);
     $result = $dbh->getrow_arrayref($statement_string, \%attr, @bind_values);
@@ -896,7 +923,7 @@ sub getrow_arrayref
     return $sth->getrow_arrayref($callbacks);
 }
 
-=head2 getrow_hashref I<(Database Handles)>
+=head2 getrow_hashref I<(database handles)>
 
     $result = $dbh->getrow_hashref($statement_string, @bind_values);
     $result = $dbh->getrow_hashref($statement_string, \%attr, @bind_values);
@@ -927,6 +954,27 @@ sub getrow_hashref
     return if $sth->err;
 
     return $sth->getrow_hashref($callbacks);
+}
+
+
+=head2 getrow I<(database handles)>
+
+    $result = $dbh->getrow($statement_string, @bind_values);
+    $result = $dbh->getrow($statement_string, \%attr, @bind_values);
+    $result = $dbh->getrow($statement_handle, @bind_values);
+
+Prepares (if necessary) and executes a single statement with the specified data
+bindings and fetches the first row as a hash reference.
+
+The C<getrow_hashref> method accepts optional callbacks for further processing
+of the result by the caller.
+
+=cut
+
+
+sub getrow
+{
+    goto &$DBIx::FlexibleBinding::GETROW_USING;
 }
 
 package    # Hide from PAUSE
@@ -1115,15 +1163,99 @@ sub bind_param
 
 =head2 execute
 
-    $rv = $sth->execute;
-    $rv = $sth->execute(@bind_values);
+    $rv = $sth->execute() or die $DBI::errstr;
+    $rv = $sth->execute(@bind_values) or die $DBI::errstr;
 
 Perform whatever processing is necessary to execute the prepared statement. An
-undef is returned if an error occurs. A successful execute always returns true
-regardless of the number of rows affected, even if it's zero.
+C<undef> is returned if an error occurs. A successful call returns true regardless
+of the number of rows affected, even if it's zero.
 
-I<Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#execute> for a more detailed
-explanation of how to use this method>.
+Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#execute> for a more detailed
+description of this method.
+
+B<Examples>
+
+=over
+
+=item Use prepare, execute and getrow_hashref with a callback to modify my data:
+
+    use strict;
+    use warnings;
+
+    use DBIx::FlexibleBinding -subs => [ 'TestDB' ];
+    use Data::Dumper;
+    use Test::More;
+
+    $Data::Dumper::Terse  = 1;
+    $Data::Dumper::Indent = 1;
+
+    TestDB 'dbi:mysql:test', '', '', { RaiseError => 1 };
+
+    my $sth = TestDB->prepare(<< '//');
+       SELECT solarSystemID   AS id
+            , solarSystemName AS name
+            , security
+         FROM mapsolarsystems
+        WHERE solarSystemName RLIKE "^U[^0-9\-]+$"
+     ORDER BY id, name, security DESC
+        LIMIT 5
+    //
+
+    $sth->execute() or die $DBI::errstr;
+
+    my @rows;
+    my @callback_list = (
+        callback {
+            my ($row) = @_;
+            $row->{filled_with} = ( $row->{security} >= 0.5 )
+                ? 'Carebears' : 'Yarrbears';
+            $row->{security} = sprintf('%.1f', $row->{security});
+            return $row;
+        }
+    );
+
+    while ( my $row = $sth->getrow_hashref(@callback_list) ) {
+        push @rows, $row;
+    }
+
+    my $expected_result = [
+       {
+         'name' => 'Uplingur',
+         'filled_with' => 'Yarrbears',
+         'id' => '30000037',
+         'security' => '0.4'
+       },
+       {
+         'security' => '0.4',
+         'id' => '30000040',
+         'name' => 'Uzistoon',
+         'filled_with' => 'Yarrbears'
+       },
+       {
+         'name' => 'Usroh',
+         'filled_with' => 'Carebears',
+         'id' => '30000068',
+         'security' => '0.6'
+       },
+       {
+         'filled_with' => 'Yarrbears',
+         'name' => 'Uhtafal',
+         'id' => '30000101',
+         'security' => '0.5'
+       },
+       {
+         'security' => '0.3',
+         'id' => '30000114',
+         'name' => 'Ubtes',
+         'filled_with' => 'Yarrbears'
+       }
+    ];
+
+    is_deeply( \@rows, $expected_result, 'iterate' )
+        and diag( Dumper(\@rows) );
+    done_testing();
+
+=back
 
 =cut
 
@@ -1152,28 +1284,270 @@ sub execute
     return ( $rows == 0 ) ? '0E0' : $rows;
 }
 
-=head2 getall_arrayref I<(Statement Handles)>
 
-    $results = $sth->getall_arrayref();
-    @results = $sth->getall_arrayref();
+=head2 iterate
+
+    $iterator = $sth->iterate() or die $DBI::errstr;
+    $iterator = $sth->iterate(@bind_values) or die $DBI::errstr;
+
+Perform whatever processing is necessary to execute the prepared statement. An
+C<undef> is returned if an error occurs. A successful call returns an iterator
+which can be used to traverse the result set.
+
+B<Examples>
+
+=over
+
+=item 1. Using an iterator and callbacks to process the result set:
+
+    use strict;
+    use warnings;
+
+    use DBIx::FlexibleBinding -subs => [ 'TestDB' ];
+    use Data::Dumper;
+    use Test::More;
+
+    $Data::Dumper::Terse  = 1;
+    $Data::Dumper::Indent = 1;
+
+    my @drivers = grep { /^SQLite$/ } DBI->available_drivers();
+
+    SKIP: {
+      skip("iterate tests (No DBD::SQLite installed)", 1) unless @drivers;
+
+      TestDB "dbi:SQLite:test.db", '', '', { RaiseError => 1 };
+
+      my $sth = TestDB->prepare(<< '//');
+       SELECT solarSystemID   AS id
+            , solarSystemName AS name
+            , security
+         FROM mapsolarsystems
+        WHERE solarSystemName REGEXP "^U[^0-9\-]+$"
+     ORDER BY id, name, security DESC
+        LIMIT 5
+    //
+
+    # Iterate over the result set
+    # ---------------------------
+    # We also queue up a sneaky callback to modify each row of data as it
+    # is fetched from the result set.
+
+      my $it = $sth->iterate( callback {
+          my ($row) = @_;
+          $row->{filled_with} = ( $row->{security} >= 0.5 )
+              ? 'Carebears' : 'Yarrbears';
+          $row->{security} = sprintf('%.1f', $row->{security});
+          return $row;
+      } );
+
+      my @rows;
+      while ( my $row = $it->() ) {
+          push @rows, $row;
+      }
+
+    # Done, now check the results ...
+
+      my $expected_result = [
+         {
+           'name' => 'Uplingur',
+           'filled_with' => 'Yarrbears',
+           'id' => '30000037',
+           'security' => '0.4'
+         },
+         {
+           'security' => '0.4',
+           'id' => '30000040',
+           'name' => 'Uzistoon',
+           'filled_with' => 'Yarrbears'
+         },
+         {
+           'name' => 'Usroh',
+           'filled_with' => 'Carebears',
+           'id' => '30000068',
+           'security' => '0.6'
+         },
+         {
+           'filled_with' => 'Yarrbears',
+           'name' => 'Uhtafal',
+           'id' => '30000101',
+           'security' => '0.5'
+         },
+         {
+           'security' => '0.3',
+           'id' => '30000114',
+           'name' => 'Ubtes',
+           'filled_with' => 'Yarrbears'
+         }
+      ];
+
+      is_deeply( \@rows, $expected_result, 'iterate' )
+          and diag( Dumper(\@rows) );
+    }
+
+    done_testing();
+
+In this example, we're traversing the result set using an iterator. As we iterate
+through the result set, a callback is applied to each row and we're left with
+an array of transformed rows.
+
+=item 2. Using an iterator's C<for_each> method and callbacks to process the
+result set:
+
+    use strict;
+    use warnings;
+
+    use DBIx::FlexibleBinding -subs => [ 'TestDB' ];
+    use Data::Dumper;
+    use Test::More;
+
+    $Data::Dumper::Terse  = 1;
+    $Data::Dumper::Indent = 1;
+
+    my @drivers = grep { /^SQLite$/ } DBI->available_drivers();
+
+    SKIP: {
+      skip("iterate tests (No DBD::SQLite installed)", 1) unless @drivers;
+
+      TestDB "dbi:SQLite:test.db", '', '', { RaiseError => 1 };
+
+      my $sth = TestDB->prepare(<< '//');
+       SELECT solarSystemID   AS id
+            , solarSystemName AS name
+            , security
+         FROM mapsolarsystems
+        WHERE solarSystemName REGEXP "^U[^0-9\-]+$"
+     ORDER BY id, name, security DESC
+        LIMIT 5
+    //
+
+    # Iterate over the result set
+    # ---------------------------
+    # This time around we call the iterator's "for_each" method to process
+    # the data. Bonus: we haven't had to store the iterator anywhere or
+    # pre-declare an empty array to accommodate our rows.
+
+      my @rows = $sth->iterate->for_each( callback {
+          my ($row) = @_;
+          $row->{filled_with} = ( $row->{security} >= 0.5 )
+              ? 'Carebears' : 'Yarrbears';
+          $row->{security} = sprintf('%.1f', $row->{security});
+          return $row;
+      } );
+
+    # Done, now check the results ...
+
+      my $expected_result = [
+         {
+           'name' => 'Uplingur',
+           'filled_with' => 'Yarrbears',
+           'id' => '30000037',
+           'security' => '0.4'
+         },
+         {
+           'security' => '0.4',
+           'id' => '30000040',
+           'name' => 'Uzistoon',
+           'filled_with' => 'Yarrbears'
+         },
+         {
+           'name' => 'Usroh',
+           'filled_with' => 'Carebears',
+           'id' => '30000068',
+           'security' => '0.6'
+         },
+         {
+           'filled_with' => 'Yarrbears',
+           'name' => 'Uhtafal',
+           'id' => '30000101',
+           'security' => '0.5'
+         },
+         {
+           'security' => '0.3',
+           'id' => '30000114',
+           'name' => 'Ubtes',
+           'filled_with' => 'Yarrbears'
+         }
+      ];
+
+      is_deeply( \@rows, $expected_result, 'iterate' )
+          and diag( Dumper(\@rows) );
+    }
+
+    done_testing();
+
+Like the previous example, we're traversing the result set using an iterator but
+this time around we have done away with C<$it> in favour of calling the iterator's
+own C<for_each> method. The callback we were using to process each row of the
+result set has now been passed into the C<for_each> method also eliminating a
+C<while> loop and an empty declaration for C<@rows>.
+
+=back
+
+=cut
+
+
+sub iterate_arrayref
+{
+    my ( $callbacks, $sth, @bind_values ) = &callbacks;
+    my $rows = $sth->execute(@bind_values);
+    return $rows unless defined $rows;
+    return bless(
+        sub {
+            return $sth->getrow_arrayref($callbacks);
+        },
+        'DBIx::FlexibleBinding::Iterator'
+    );
+}
+
+
+sub iterate_hashref
+{
+    my ( $callbacks, $sth, @bind_values ) = &callbacks;
+    my $rows = $sth->execute(@bind_values);
+    return $rows unless defined $rows;
+    return bless(
+        sub {
+            return $sth->getrow_hashref($callbacks);
+        },
+        'DBIx::FlexibleBinding::Iterator'
+    );
+}
+
+sub iterate
+{
+    my ( $callbacks, $sth, @bind_values ) = &callbacks;
+    my $rows = $sth->execute(@bind_values);
+    return $rows unless defined $rows;
+    return bless(
+        sub {
+            return $sth->getrow($callbacks);
+        },
+        'DBIx::FlexibleBinding::Iterator'
+    );
+}
+
+=head2 getrows_arrayref I<(database handles)>
+
+    $results = $sth->getrows_arrayref();
+    @results = $sth->getrows_arrayref();
 
 Fetches the entire result set as an array of array references.
 
-The C<getall_arrayref> method accepts optional callbacks for further processing
+The C<getrows_arrayref> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =cut
 
 
-sub getall_arrayref
+sub getrows_arrayref
 {
+    local $_;
     my ( $callbacks, $sth ) = &callbacks;
     my $result = $sth->fetchall_arrayref();
 
     if ($result) {
         unless ( $sth->err ) {
             if (@$callbacks) {
-                local $_;
                 $result = [ map { $callbacks->transform($_) } @$result ];
             }
         }
@@ -1183,28 +1557,28 @@ sub getall_arrayref
     return wantarray ? @$result : $result;
 }
 
-=head2 getall_hashref I<(Statement Handles)>
+=head2 getrows_hashref I<(database handles)>
 
-    $results = $sth->getall_hashref();
-    @results = $sth->getall_hashref();
+    $results = $sth->getrows_hashref();
+    @results = $sth->getrows_hashref();
 
 Fetches the entire result set as an array of hash references.
 
-The C<getall_hashref> method accepts optional callbacks for further processing
+The C<getrows_hashref> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =cut
 
 
-sub getall_hashref
+sub getrows_hashref
 {
+    local $_;
     my ( $callbacks, $sth ) = &callbacks;
     my $result = $sth->fetchall_arrayref( {} );
 
     if ($result) {
         unless ( $sth->err ) {
             if (@$callbacks) {
-                local $_;
                 $result = [ map { $callbacks->transform($_) } @$result ];
             }
         }
@@ -1214,7 +1588,26 @@ sub getall_hashref
     return wantarray ? @$result : $result;
 }
 
-=head2 getrow_arrayref I<(Statement Handles)>
+
+=head2 getrows I<(database handles)>
+
+    $results = $sth->getrows();
+    @results = $sth->getrows();
+
+Fetches the entire result set as an array of hash references.
+
+The C<getrows_hashref> method accepts optional callbacks for further processing
+of the results by the caller.
+
+=cut
+
+
+sub getrows
+{
+    goto &$DBIx::FlexibleBinding::GETROWS_USING;
+}
+
+=head2 getrow_arrayref I<(database handles)>
 
     $result = $sth->getrow_arrayref();
 
@@ -1229,6 +1622,7 @@ of the result by the caller.
 
 sub getrow_arrayref
 {
+    local $_;
     my ( $callbacks, $sth ) = &callbacks;
     my $result = $sth->fetchrow_arrayref();
 
@@ -1237,7 +1631,6 @@ sub getrow_arrayref
             $result = [@$result];
 
             if (@$callbacks) {
-                local $_;
                 $result = $callbacks->smart_transform( $_ = $result );
             }
         }
@@ -1247,7 +1640,7 @@ sub getrow_arrayref
 }
 
 
-=head2 getrow_hashref I<(Statement Handles)>
+=head2 getrow_hashref I<(database handles)>
 
     $result = $sth->getrow_hashref();
 
@@ -1262,13 +1655,13 @@ of the result by the caller.
 
 sub getrow_hashref
 {
+    local $_;
     my ( $callbacks, $sth ) = &callbacks;
     my $result = $sth->fetchrow_hashref();
 
     if ($result) {
         unless ( $sth->err ) {
             if (@$callbacks) {
-                local $_;
                 $result = $callbacks->smart_transform( $_ = $result );
             }
         }
@@ -1277,6 +1670,24 @@ sub getrow_hashref
     return $result;
 }
 
+
+=head2 getrow I<(database handles)>
+
+    $result = $sth->getrow();
+
+Fetches the next row as a hash reference. Returns C<undef> if there are no more
+rows available.
+
+The C<getrow_hashref> method accepts optional callbacks for further processing
+of the result by the caller.
+
+=cut
+
+
+sub getrow
+{
+    goto &$DBIx::FlexibleBinding::GETROW_USING;
+}
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::ObjectProxy;
@@ -1441,7 +1852,27 @@ sub process
         }
     }
 
-    return $self->{target}->$PROXIES_GETALL_USING(@args);
+    return $self->{target}->$GETROWS_USING(@args);
+}
+
+package    # Hide from PAUSE
+  DBIx::FlexibleBinding::Iterator;
+
+use Params::Callbacks 'callbacks';
+
+
+sub for_each
+{
+    local $_;
+    my ( $callbacks, $self ) = &callbacks;
+    my @results;
+
+    while ( my @items = $self->() ) {
+        last if @items == 1 && !defined( $items[0] );
+        push @results, map { $callbacks->transform($_) } @items;
+    }
+
+    return @results;
 }
 
 1;

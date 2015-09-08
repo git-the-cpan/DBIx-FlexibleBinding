@@ -3,7 +3,7 @@ NAME
     choice and data binding
 
 VERSION
-    version 1.152501
+    version 1.152510
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of
@@ -41,12 +41,12 @@ SYNOPSIS
         # Fetch and transform rows with a blocking callback to get only the data you
         # want without cluttering the place up with intermediate state ...
         #
-        my @system_names = $sth->getall_hashref(callback { $_->{name} });
+        my @system_names = $sth->getrows_hashref(callback { $_->{name} });
 
         ############################################################################
         # SCENARIO 2                                                               #
         # Let's simplify the previous scenario using the database handle's version #
-        # of that getall_hashref method.                                       #
+        # of that getrows_hashref method.                                       #
         ############################################################################
 
         use DBIx::FlexibleBinding -alias => 'DFB';
@@ -64,7 +64,7 @@ SYNOPSIS
 
         # Cut out the middle men ...
         #
-        my @system_names = $dbh->getall_hashref(SQL,
+        my @system_names = $dbh->getrows_hashref(SQL,
                                                     is_regional => 1,
                                                     minimum_security => 1.0,
                                                     callback { $_->{name} });
@@ -138,9 +138,9 @@ DESCRIPTION
 
     * "getrow_hashref"
 
-    * "getall_arrayref"
+    * "getrows_arrayref"
 
-    * "getall_hashref"
+    * "getrows_hashref"
 
     These methods complement DBI's existing fetch methods, providing new
     ways to retrieve and process data.
@@ -268,15 +268,15 @@ PACKAGE GLOBALS
 
     The default setting is "1" (*enabled*).
 
-  $DBIx::FlexibleBinding::PROXIES_GETALL_USING
+  $DBIx::FlexibleBinding::GETROWS_USING
     The subroutines created with the "-subs" import option may be used to
     retrieve result sets. By default, any such subroutines delegate that
-    particular task to a method called "getall_hashref", which is provided
+    particular task to a method called "getrows_hashref", which is provided
     by this module for both database and statement handles alike.
 
     For reasons of efficiency the developer may prefer array references over
     hash references, in which case they only need assign the value
-    "getall_arrayref" to this global.
+    "getrows_arrayref" to this global.
 
 IMPORT TAGS AND OPTIONS
   -alias
@@ -367,7 +367,8 @@ DATABASE HANDLE METHODS
     Refer to <http://search.cpan.org/dist/DBI/DBI.pm#do> for a more detailed
     description of this method.
 
-   Examples
+    Examples
+
     1. Statement attributes are now optional:
             $sql = << '//';
             UPDATE employees
@@ -405,7 +406,8 @@ DATABASE HANDLE METHODS
     Refer to <http://search.cpan.org/dist/DBI/DBI.pm#prepare> for a more
     detailed description of this method.
 
-   Examples
+    Examples
+
     1. Prepare a statement using positional placeholders:
             $sql = << '//';
             UPDATE employees
@@ -426,22 +428,23 @@ DATABASE HANDLE METHODS
 
             $sth = $dbh->prepare($sql);
 
-  getall_arrayref *(Database Handles)*
-        $results = $dbh->getall_arrayref($statement_string, @bind_values);
-        @results = $dbh->getall_arrayref($statement_string, @bind_values);
-        $results = $dbh->getall_arrayref($statement_string, \%attr, @bind_values);
-        @results = $dbh->getall_arrayref($statement_string, \%attr, @bind_values);
-        $results = $dbh->getall_arrayref($statement_handle, @bind_values);
-        @results = $dbh->getall_arrayref($statement_handle, @bind_values);
+  getrows_arrayref *(database handles)*
+        $results = $dbh->getrows_arrayref($statement_string, @bind_values);
+        @results = $dbh->getrows_arrayref($statement_string, @bind_values);
+        $results = $dbh->getrows_arrayref($statement_string, \%attr, @bind_values);
+        @results = $dbh->getrows_arrayref($statement_string, \%attr, @bind_values);
+        $results = $dbh->getrows_arrayref($statement_handle, @bind_values);
+        @results = $dbh->getrows_arrayref($statement_handle, @bind_values);
 
     Prepares (if necessary) and executes a single statement with the
     specified data bindings and fetches the result set as an array of array
     references.
 
-    The "getall_arrayref" method accepts optional callbacks for further
+    The "getrows_arrayref" method accepts optional callbacks for further
     processing of the results by the caller.
 
-   Examples
+    Examples
+
     1. Prepare, execute it then get the results as a reference:
             $sql = << '//';
             SELECT solarSystemName AS name
@@ -451,7 +454,7 @@ DATABASE HANDLE METHODS
                AND security >= :minimum_security
             //
 
-            $systems = $dbh->getall_arrayref($sql, minimum_security => 1.0);
+            $systems = $dbh->getrows_arrayref($sql, minimum_security => 1.0);
 
             # Returns a structure something like this:
             #
@@ -471,7 +474,7 @@ DATABASE HANDLE METHODS
 
             $sth = $dbh->prepare($sql);
 
-            @systems = $dbh->getall_arrayref($sql, minimum_security => 1.0);
+            @systems = $dbh->getrows_arrayref($sql, minimum_security => 1.0);
 
             for my $system (@systems) {
                 printf "%-11s %.1f\n", @$system;
@@ -496,7 +499,7 @@ DATABASE HANDLE METHODS
 
             $sth = $dbh->prepare($sql);
 
-            $systems = $dbh->getall_arrayref($sql, minimum_security => 1.0, callback {
+            $systems = $dbh->getrows_arrayref($sql, minimum_security => 1.0, callback {
                 my ($row) = @_;
                 return sprintf("%-11s %.1f\n", @$row);
             });
@@ -512,22 +515,23 @@ DATABASE HANDLE METHODS
             #   'Duripant    1.0',
             #   'Yulai       1.0' ]
 
-  getall_hashref *(Database Handles)*
-        $results = $dbh->getall_hashref($statement_string, @bind_values);
-        @results = $dbh->getall_hashref($statement_string, @bind_values);
-        $results = $dbh->getall_hashref($statement_string, \%attr, @bind_values);
-        @results = $dbh->getall_hashref($statement_string, \%attr, @bind_values);
-        $results = $dbh->getall_hashref($statement_handle, @bind_values);
-        @results = $dbh->getall_hashref($statement_handle, @bind_values);
+  getrows_hashref *(database handles)*
+        $results = $dbh->getrows_hashref($statement_string, @bind_values);
+        @results = $dbh->getrows_hashref($statement_string, @bind_values);
+        $results = $dbh->getrows_hashref($statement_string, \%attr, @bind_values);
+        @results = $dbh->getrows_hashref($statement_string, \%attr, @bind_values);
+        $results = $dbh->getrows_hashref($statement_handle, @bind_values);
+        @results = $dbh->getrows_hashref($statement_handle, @bind_values);
 
     Prepares (if necessary) and executes a single statement with the
     specified data bindings and fetches the result set as an array of hash
     references.
 
-    The "getall_hashref" method accepts optional callbacks for further
+    The "getrows_hashref" method accepts optional callbacks for further
     processing of the results by the caller.
 
-   Examples
+    Examples
+
     1. Prepare, execute it then get the results as a reference:
             $sql = << '//';
             SELECT solarSystemName AS name
@@ -537,7 +541,7 @@ DATABASE HANDLE METHODS
                AND security >= :minimum_security
             //
 
-            $systems = $dbh->getall_hashref($sql, minimum_security => 1.0);
+            $systems = $dbh->getrows_hashref($sql, minimum_security => 1.0);
 
             # Returns a structure something like this:
             #
@@ -557,7 +561,7 @@ DATABASE HANDLE METHODS
 
             $sth = $dbh->prepare($sql);
 
-            @systems = $dbh->getall_hashref($sql, minimum_security => 1.0);
+            @systems = $dbh->getrows_hashref($sql, minimum_security => 1.0);
 
             for my $system (@systems) {
                 printf "%-11s %.1f\n", @{$system}{'name', 'security'}; # Hash slice
@@ -582,7 +586,7 @@ DATABASE HANDLE METHODS
 
             $sth = $dbh->prepare($sql);
 
-            $systems = $dbh->getall_hashref($sql, minimum_security => 1.0, callback {
+            $systems = $dbh->getrows_hashref($sql, minimum_security => 1.0, callback {
                 sprintf("%-11s %.1f\n", @{$_}{'name', 'security'}); # Hash slice
             });
 
@@ -597,7 +601,22 @@ DATABASE HANDLE METHODS
             #   'Duripant    1.0',
             #   'Yulai       1.0' ]
 
-  getrow_arrayref *(Database Handles)*
+  getrows *(database handles)*
+        $results = $dbh->getrows($statement_string, @bind_values);
+        @results = $dbh->getrows($statement_string, @bind_values);
+        $results = $dbh->getrows($statement_string, \%attr, @bind_values);
+        @results = $dbh->getrows($statement_string, \%attr, @bind_values);
+        $results = $dbh->getrows($statement_handle, @bind_values);
+        @results = $dbh->getrows$statement_handle, @bind_values);
+
+    Prepares (if necessary) and executes a single statement with the
+    specified data bindings and fetches the result set as an array of hash
+    references.
+
+    The "getrows_hashref" method accepts optional callbacks for further
+    processing of the results by the caller.
+
+  getrow_arrayref *(database handles)*
         $result = $dbh->getrow_arrayref($statement_string, @bind_values);
         $result = $dbh->getrow_arrayref($statement_string, \%attr, @bind_values);
         $result = $dbh->getrow_arrayref($statement_handle, @bind_values);
@@ -608,10 +627,21 @@ DATABASE HANDLE METHODS
     The "getrow_arrayref" method accepts optional callbacks for further
     processing of the result by the caller.
 
-  getrow_hashref *(Database Handles)*
+  getrow_hashref *(database handles)*
         $result = $dbh->getrow_hashref($statement_string, @bind_values);
         $result = $dbh->getrow_hashref($statement_string, \%attr, @bind_values);
         $result = $dbh->getrow_hashref($statement_handle, @bind_values);
+
+    Prepares (if necessary) and executes a single statement with the
+    specified data bindings and fetches the first row as a hash reference.
+
+    The "getrow_hashref" method accepts optional callbacks for further
+    processing of the result by the caller.
+
+  getrow *(database handles)*
+        $result = $dbh->getrow($statement_string, @bind_values);
+        $result = $dbh->getrow($statement_string, \%attr, @bind_values);
+        $result = $dbh->getrow($statement_handle, @bind_values);
 
     Prepares (if necessary) and executes a single statement with the
     specified data bindings and fetches the first row as a hash reference.
@@ -675,36 +705,317 @@ STATEMENT HANDLE METHODS
     detailed explanation of how to use this method*.
 
   execute
-        $rv = $sth->execute;
-        $rv = $sth->execute(@bind_values);
+        $rv = $sth->execute() or die $DBI::errstr;
+        $rv = $sth->execute(@bind_values) or die $DBI::errstr;
 
     Perform whatever processing is necessary to execute the prepared
-    statement. An undef is returned if an error occurs. A successful execute
-    always returns true regardless of the number of rows affected, even if
-    it's zero.
+    statement. An "undef" is returned if an error occurs. A successful call
+    returns true regardless of the number of rows affected, even if it's
+    zero.
 
-    *Refer to <http://search.cpan.org/dist/DBI/DBI.pm#execute> for a more
-    detailed explanation of how to use this method*.
+    Refer to <http://search.cpan.org/dist/DBI/DBI.pm#execute> for a more
+    detailed description of this method.
 
-  getall_arrayref *(Statement Handles)*
-        $results = $sth->getall_arrayref();
-        @results = $sth->getall_arrayref();
+    Examples
+
+    Use prepare, execute and getrow_hashref with a callback to modify my
+    data:
+            use strict;
+            use warnings;
+
+            use DBIx::FlexibleBinding -subs => [ 'TestDB' ];
+            use Data::Dumper;
+            use Test::More;
+
+            $Data::Dumper::Terse  = 1;
+            $Data::Dumper::Indent = 1;
+
+            TestDB 'dbi:mysql:test', '', '', { RaiseError => 1 };
+
+            my $sth = TestDB->prepare(<< '//');
+               SELECT solarSystemID   AS id
+                    , solarSystemName AS name
+                    , security
+                 FROM mapsolarsystems
+                WHERE solarSystemName RLIKE "^U[^0-9\-]+$"
+             ORDER BY id, name, security DESC
+                LIMIT 5
+            //
+
+            $sth->execute() or die $DBI::errstr;
+
+            my @rows;
+            my @callback_list = (
+                callback {
+                    my ($row) = @_;
+                    $row->{filled_with} = ( $row->{security} >= 0.5 )
+                        ? 'Carebears' : 'Yarrbears';
+                    $row->{security} = sprintf('%.1f', $row->{security});
+                    return $row;
+                }
+            );
+
+            while ( my $row = $sth->getrow_hashref(@callback_list) ) {
+                push @rows, $row;
+            }
+
+            my $expected_result = [
+               {
+                 'name' => 'Uplingur',
+                 'filled_with' => 'Yarrbears',
+                 'id' => '30000037',
+                 'security' => '0.4'
+               },
+               {
+                 'security' => '0.4',
+                 'id' => '30000040',
+                 'name' => 'Uzistoon',
+                 'filled_with' => 'Yarrbears'
+               },
+               {
+                 'name' => 'Usroh',
+                 'filled_with' => 'Carebears',
+                 'id' => '30000068',
+                 'security' => '0.6'
+               },
+               {
+                 'filled_with' => 'Yarrbears',
+                 'name' => 'Uhtafal',
+                 'id' => '30000101',
+                 'security' => '0.5'
+               },
+               {
+                 'security' => '0.3',
+                 'id' => '30000114',
+                 'name' => 'Ubtes',
+                 'filled_with' => 'Yarrbears'
+               }
+            ];
+
+            is_deeply( \@rows, $expected_result, 'iterate' )
+                and diag( Dumper(\@rows) );
+            done_testing();
+
+  iterate
+        $iterator = $sth->iterate() or die $DBI::errstr;
+        $iterator = $sth->iterate(@bind_values) or die $DBI::errstr;
+
+    Perform whatever processing is necessary to execute the prepared
+    statement. An "undef" is returned if an error occurs. A successful call
+    returns an iterator which can be used to traverse the result set.
+
+    Examples
+
+    1. Using an iterator and callbacks to process the result set:
+            use strict;
+            use warnings;
+
+            use DBIx::FlexibleBinding -subs => [ 'TestDB' ];
+            use Data::Dumper;
+            use Test::More;
+
+            $Data::Dumper::Terse  = 1;
+            $Data::Dumper::Indent = 1;
+
+            my @drivers = grep { /^SQLite$/ } DBI->available_drivers();
+
+            SKIP: {
+              skip("iterate tests (No DBD::SQLite installed)", 1) unless @drivers;
+
+              TestDB "dbi:SQLite:test.db", '', '', { RaiseError => 1 };
+
+              my $sth = TestDB->prepare(<< '//');
+               SELECT solarSystemID   AS id
+                    , solarSystemName AS name
+                    , security
+                 FROM mapsolarsystems
+                WHERE solarSystemName REGEXP "^U[^0-9\-]+$"
+             ORDER BY id, name, security DESC
+                LIMIT 5
+            //
+
+            # Iterate over the result set
+            # ---------------------------
+            # We also queue up a sneaky callback to modify each row of data as it
+            # is fetched from the result set.
+
+              my $it = $sth->iterate( callback {
+                  my ($row) = @_;
+                  $row->{filled_with} = ( $row->{security} >= 0.5 )
+                      ? 'Carebears' : 'Yarrbears';
+                  $row->{security} = sprintf('%.1f', $row->{security});
+                  return $row;
+              } );
+
+              my @rows;
+              while ( my $row = $it->() ) {
+                  push @rows, $row;
+              }
+
+            # Done, now check the results ...
+
+              my $expected_result = [
+                 {
+                   'name' => 'Uplingur',
+                   'filled_with' => 'Yarrbears',
+                   'id' => '30000037',
+                   'security' => '0.4'
+                 },
+                 {
+                   'security' => '0.4',
+                   'id' => '30000040',
+                   'name' => 'Uzistoon',
+                   'filled_with' => 'Yarrbears'
+                 },
+                 {
+                   'name' => 'Usroh',
+                   'filled_with' => 'Carebears',
+                   'id' => '30000068',
+                   'security' => '0.6'
+                 },
+                 {
+                   'filled_with' => 'Yarrbears',
+                   'name' => 'Uhtafal',
+                   'id' => '30000101',
+                   'security' => '0.5'
+                 },
+                 {
+                   'security' => '0.3',
+                   'id' => '30000114',
+                   'name' => 'Ubtes',
+                   'filled_with' => 'Yarrbears'
+                 }
+              ];
+
+              is_deeply( \@rows, $expected_result, 'iterate' )
+                  and diag( Dumper(\@rows) );
+            }
+
+            done_testing();
+
+        In this example, we're traversing the result set using an iterator.
+        As we iterate through the result set, a callback is applied to each
+        row and we're left with an array of transformed rows.
+
+    2. Using an iterator's "for_each" method and callbacks to process the
+    result set:
+            use strict;
+            use warnings;
+
+            use DBIx::FlexibleBinding -subs => [ 'TestDB' ];
+            use Data::Dumper;
+            use Test::More;
+
+            $Data::Dumper::Terse  = 1;
+            $Data::Dumper::Indent = 1;
+
+            my @drivers = grep { /^SQLite$/ } DBI->available_drivers();
+
+            SKIP: {
+              skip("iterate tests (No DBD::SQLite installed)", 1) unless @drivers;
+
+              TestDB "dbi:SQLite:test.db", '', '', { RaiseError => 1 };
+
+              my $sth = TestDB->prepare(<< '//');
+               SELECT solarSystemID   AS id
+                    , solarSystemName AS name
+                    , security
+                 FROM mapsolarsystems
+                WHERE solarSystemName REGEXP "^U[^0-9\-]+$"
+             ORDER BY id, name, security DESC
+                LIMIT 5
+            //
+
+            # Iterate over the result set
+            # ---------------------------
+            # This time around we call the iterator's "for_each" method to process
+            # the data. Bonus: we haven't had to store the iterator anywhere or
+            # pre-declare an empty array to accommodate our rows.
+
+              my @rows = $sth->iterate->for_each( callback {
+                  my ($row) = @_;
+                  $row->{filled_with} = ( $row->{security} >= 0.5 )
+                      ? 'Carebears' : 'Yarrbears';
+                  $row->{security} = sprintf('%.1f', $row->{security});
+                  return $row;
+              } );
+
+            # Done, now check the results ...
+
+              my $expected_result = [
+                 {
+                   'name' => 'Uplingur',
+                   'filled_with' => 'Yarrbears',
+                   'id' => '30000037',
+                   'security' => '0.4'
+                 },
+                 {
+                   'security' => '0.4',
+                   'id' => '30000040',
+                   'name' => 'Uzistoon',
+                   'filled_with' => 'Yarrbears'
+                 },
+                 {
+                   'name' => 'Usroh',
+                   'filled_with' => 'Carebears',
+                   'id' => '30000068',
+                   'security' => '0.6'
+                 },
+                 {
+                   'filled_with' => 'Yarrbears',
+                   'name' => 'Uhtafal',
+                   'id' => '30000101',
+                   'security' => '0.5'
+                 },
+                 {
+                   'security' => '0.3',
+                   'id' => '30000114',
+                   'name' => 'Ubtes',
+                   'filled_with' => 'Yarrbears'
+                 }
+              ];
+
+              is_deeply( \@rows, $expected_result, 'iterate' )
+                  and diag( Dumper(\@rows) );
+            }
+
+            done_testing();
+
+        Like the previous example, we're traversing the result set using an
+        iterator but this time around we have done away with $it in favour
+        of calling the iterator's own "for_each" method. The callback we
+        were using to process each row of the result set has now been passed
+        into the "for_each" method also eliminating a "while" loop and an
+        empty declaration for @rows.
+
+  getrows_arrayref *(database handles)*
+        $results = $sth->getrows_arrayref();
+        @results = $sth->getrows_arrayref();
 
     Fetches the entire result set as an array of array references.
 
-    The "getall_arrayref" method accepts optional callbacks for further
+    The "getrows_arrayref" method accepts optional callbacks for further
     processing of the results by the caller.
 
-  getall_hashref *(Statement Handles)*
-        $results = $sth->getall_hashref();
-        @results = $sth->getall_hashref();
+  getrows_hashref *(database handles)*
+        $results = $sth->getrows_hashref();
+        @results = $sth->getrows_hashref();
 
     Fetches the entire result set as an array of hash references.
 
-    The "getall_hashref" method accepts optional callbacks for further
+    The "getrows_hashref" method accepts optional callbacks for further
     processing of the results by the caller.
 
-  getrow_arrayref *(Statement Handles)*
+  getrows *(database handles)*
+        $results = $sth->getrows();
+        @results = $sth->getrows();
+
+    Fetches the entire result set as an array of hash references.
+
+    The "getrows_hashref" method accepts optional callbacks for further
+    processing of the results by the caller.
+
+  getrow_arrayref *(database handles)*
         $result = $sth->getrow_arrayref();
 
     Fetches the next row as an array reference. Returns "undef" if there are
@@ -713,8 +1024,17 @@ STATEMENT HANDLE METHODS
     The "getrow_arrayref" method accepts optional callbacks for further
     processing of the result by the caller.
 
-  getrow_hashref *(Statement Handles)*
+  getrow_hashref *(database handles)*
         $result = $sth->getrow_hashref();
+
+    Fetches the next row as a hash reference. Returns "undef" if there are
+    no more rows available.
+
+    The "getrow_hashref" method accepts optional callbacks for further
+    processing of the result by the caller.
+
+  getrow *(database handles)*
+        $result = $sth->getrow();
 
     Fetches the next row as a hash reference. Returns "undef" if there are
     no more rows available.

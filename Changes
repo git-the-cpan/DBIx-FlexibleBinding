@@ -1,3 +1,35 @@
+1.152510  2015-09-08 20:09:15+01:00 Europe/London
+
+    - Methods with names matching /^getall_.*$/ now have names starting 
+      with "getrows_". I wasn't happy with "getall_" because, to those with
+      less experience may be left wondering "get all what?" At least this is 
+      a little more self explanatory.
+      
+    - $DBIx::FlexibleBinding::PROXIES_GETALL_USING is now simply
+      $DBIx::FlexibleBinding::GETROWS_USING and is now also used by "getrows"
+      methods.
+      
+    - $DBIx::FlexibleBinding::GETROW_USING has been introduced and is used by 
+      "getrow" methods.
+    
+    - Database handles and statement handles now implement methods called "getrow"
+      and "getrows" which do their thing by fetching rows as hashrefs by default,
+      unless the caller change the following package globals:
+      
+        * $DBIx::FlexibleBinding::GETROW_USING
+        * $DBIx::FlexibleBinding::GETROWS_USING
+    
+    - Functional Iterator pattern implemented with it's own for_each method.
+    
+    - Numerous POD changes with more example code added.
+    
+    - Numerous non-functional changes to some routines (local $_ moved to another
+      scope in some places).
+      
+    - Tests made less noisey.
+    
+    - More test coverage, but there could always be more, more, more.
+    
 1.152501  2015-09-07 22:37:38+01:00 Europe/London
 
     - No functional changes; just refactoring to use Sub::Install instead of the
