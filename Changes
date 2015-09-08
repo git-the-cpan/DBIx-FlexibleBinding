@@ -1,3 +1,8 @@
+1.152511  2015-09-08 20:30:10+01:00 Europe/London
+    
+    - Package rebuilt using Dist::Zilla::Plugin::OurPkgVersion in an attempt to
+      fix a failing Kwalitee metric. Grumble.
+      
 1.152510  2015-09-08 20:09:15+01:00 Europe/London
 
     - Methods with names matching /^getall_.*$/ now have names starting 

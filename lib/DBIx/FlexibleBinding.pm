@@ -5,7 +5,7 @@ DBIx::FlexibleBinding - Greater flexibility on statement placeholder choice and 
 
 =head1 VERSION
 
-version 1.152510
+version 1.152511
 
 =cut
 
@@ -285,12 +285,12 @@ use later as representations of database and statement handles.
 
 =cut
 
-
-package DBIx::FlexibleBinding;
-BEGIN { $DBIx::FlexibleBinding::VERSION = '1.152510'; }
-# ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
 use strict;
 use warnings;
+
+package DBIx::FlexibleBinding;
+our $VERSION = '1.152511'; # VERSION
+# ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
 use Carp qw(confess);
 use Exporter ();
 use DBI      ();
@@ -460,6 +460,7 @@ sub connect
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::db;
+our $VERSION = '1.152511'; # VERSION
 
 use List::MoreUtils qw(any);
 use Params::Callbacks qw(callbacks);
@@ -979,7 +980,7 @@ sub getrow
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::st;
-
+our $VERSION = '1.152511'; # VERSION
 
 BEGIN {
     *_dbix_set_err = \&DBIx::FlexibleBinding::_dbix_set_err;
@@ -1691,6 +1692,7 @@ sub getrow
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::ObjectProxy;
+our $VERSION = '1.152511'; # VERSION
 
 use Carp 'confess';
 use Scalar::Util 'blessed';
@@ -1819,12 +1821,14 @@ sub AUTOLOAD
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::UnassignedProxy;
+our $VERSION = '1.152511'; # VERSION
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::DatabaseConnectionProxy;
+our $VERSION = '1.152511'; # VERSION
 
 use Carp 'confess';
 
@@ -1833,6 +1837,7 @@ our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::StatementProxy;
+our $VERSION = '1.152511'; # VERSION
 
 use Carp 'confess';
 
@@ -1857,6 +1862,7 @@ sub process
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::Iterator;
+our $VERSION = '1.152511'; # VERSION
 
 use Params::Callbacks 'callbacks';
 
