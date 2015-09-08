@@ -3,7 +3,7 @@ NAME
     choice and data binding
 
 VERSION
-    version 1.152511
+    version 1.8.2
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of
@@ -273,6 +273,17 @@ PACKAGE GLOBALS
     retrieve result sets. By default, any such subroutines delegate that
     particular task to a method called "getrows_hashref", which is provided
     by this module for both database and statement handles alike.
+
+    It is also used to influence the type of structure the "getrows" methods
+    fetch by default (hashrefs or arrayrefs).
+
+    For reasons of efficiency the developer may prefer array references over
+    hash references, in which case they only need assign the value
+    "getrows_arrayref" to this global.
+
+  $DBIx::FlexibleBinding::GETROW_USING
+    Used to control influence the type of structure the "getrow" methods
+    fetch by default (hashrefs or arrayrefs).
 
     For reasons of efficiency the developer may prefer array references over
     hash references, in which case they only need assign the value

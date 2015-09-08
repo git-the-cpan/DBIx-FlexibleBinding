@@ -29,4 +29,4 @@ requires:
   namespace::clean: '0'
   strict: '0'
   warnings: '0'
-version: '1.152511'
+version: 1.8.2

@@ -5,7 +5,7 @@ DBIx::FlexibleBinding - Greater flexibility on statement placeholder choice and 
 
 =head1 VERSION
 
-version 1.152511
+version 1.8.2
 
 =cut
 
@@ -289,7 +289,7 @@ use strict;
 use warnings;
 
 package DBIx::FlexibleBinding;
-our $VERSION = '1.152511'; # VERSION
+our $VERSION = '1.8.2'; # VERSION
 # ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
 use Carp qw(confess);
 use Exporter ();
@@ -317,6 +317,18 @@ The subroutines created with the C<-subs> import option may be used to
 retrieve result sets. By default, any such subroutines delegate that particular
 task to a method called C<"getrows_hashref">, which is provided by this module
 for both database and statement handles alike.
+
+It is also used to influence the type of structure the C<getrows> methods fetch 
+by default (hashrefs or arrayrefs).
+
+For reasons of efficiency the developer may prefer array references over hash
+references, in which case they only need assign the value C<"getrows_arrayref">
+to this global.
+
+=head2 $DBIx::FlexibleBinding::GETROW_USING
+
+Used to control influence the type of structure the C<getrow> methods fetch 
+by default (hashrefs or arrayrefs).
 
 For reasons of efficiency the developer may prefer array references over hash
 references, in which case they only need assign the value C<"getrows_arrayref">
@@ -460,7 +472,7 @@ sub connect
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::db;
-our $VERSION = '1.152511'; # VERSION
+our $VERSION = '1.8.2'; # VERSION
 
 use List::MoreUtils qw(any);
 use Params::Callbacks qw(callbacks);
@@ -980,7 +992,7 @@ sub getrow
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::st;
-our $VERSION = '1.152511'; # VERSION
+our $VERSION = '1.8.2'; # VERSION
 
 BEGIN {
     *_dbix_set_err = \&DBIx::FlexibleBinding::_dbix_set_err;
@@ -1692,7 +1704,7 @@ sub getrow
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::ObjectProxy;
-our $VERSION = '1.152511'; # VERSION
+our $VERSION = '1.8.2'; # VERSION
 
 use Carp 'confess';
 use Scalar::Util 'blessed';
@@ -1821,14 +1833,14 @@ sub AUTOLOAD
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::UnassignedProxy;
-our $VERSION = '1.152511'; # VERSION
+our $VERSION = '1.8.2'; # VERSION
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::DatabaseConnectionProxy;
-our $VERSION = '1.152511'; # VERSION
+our $VERSION = '1.8.2'; # VERSION
 
 use Carp 'confess';
 
@@ -1837,7 +1849,7 @@ our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::StatementProxy;
-our $VERSION = '1.152511'; # VERSION
+our $VERSION = '1.8.2'; # VERSION
 
 use Carp 'confess';
 
@@ -1862,7 +1874,7 @@ sub process
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::Iterator;
-our $VERSION = '1.152511'; # VERSION
+our $VERSION = '1.8.2'; # VERSION
 
 use Params::Callbacks 'callbacks';
 
