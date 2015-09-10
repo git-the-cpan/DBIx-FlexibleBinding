@@ -5,7 +5,7 @@ DBIx::FlexibleBinding - Greater flexibility on statement placeholder choice and 
 
 =head1 VERSION
 
-version 1.8.2
+version 1.8.3
 
 =cut
 
@@ -289,7 +289,7 @@ use strict;
 use warnings;
 
 package DBIx::FlexibleBinding;
-our $VERSION = '1.8.2'; # VERSION
+our $VERSION = '1.8.3'; # VERSION
 # ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
 use Carp qw(confess);
 use Exporter ();
@@ -472,7 +472,7 @@ sub connect
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::db;
-our $VERSION = '1.8.2'; # VERSION
+our $VERSION = '1.8.3'; # VERSION
 
 use List::MoreUtils qw(any);
 use Params::Callbacks qw(callbacks);
@@ -890,9 +890,13 @@ sub getrows_hashref
     @results = $dbh->getrows$statement_handle, @bind_values);
 
 Prepares (if necessary) and executes a single statement with the specified data
-bindings and fetches the result set as an array of hash references.
+bindings and fetches the result set.
 
-The C<getrows_hashref> method accepts optional callbacks for further processing
+Default behaviour is for all rows to be fetched as hash references. If array
+references are preferred, change the C<$DBIx::FlexibleBinding::GETROWS_USING>
+package global from C<"getrows_hashref"> to C<"getrows_arrayref">.
+
+The C<getrows> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =cut
@@ -977,9 +981,13 @@ sub getrow_hashref
     $result = $dbh->getrow($statement_handle, @bind_values);
 
 Prepares (if necessary) and executes a single statement with the specified data
-bindings and fetches the first row as a hash reference.
+bindings and fetches the first row.
 
-The C<getrow_hashref> method accepts optional callbacks for further processing
+Default behaviour is for the row to be fetched as a hash reference. If array
+references are preferred, change the C<$DBIx::FlexibleBinding::GETROW_USING>
+package global from C<"getrow_hashref"> to C<"getrow_arrayref">.
+
+The C<getrow> method accepts optional callbacks for further processing
 of the result by the caller.
 
 =cut
@@ -992,7 +1000,7 @@ sub getrow
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::st;
-our $VERSION = '1.8.2'; # VERSION
+our $VERSION = '1.8.3'; # VERSION
 
 BEGIN {
     *_dbix_set_err = \&DBIx::FlexibleBinding::_dbix_set_err;
@@ -1607,9 +1615,13 @@ sub getrows_hashref
     $results = $sth->getrows();
     @results = $sth->getrows();
 
-Fetches the entire result set as an array of hash references.
+Fetches the entire result set.
 
-The C<getrows_hashref> method accepts optional callbacks for further processing
+Default behaviour is for all rows to be fetched as hash references. If array
+references are preferred, change the C<$DBIx::FlexibleBinding::GETROWS_USING>
+package global from C<"getrows_hashref"> to C<"getrows_arrayref">.
+
+The C<getrows> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =cut
@@ -1688,10 +1700,13 @@ sub getrow_hashref
 
     $result = $sth->getrow();
 
-Fetches the next row as a hash reference. Returns C<undef> if there are no more
-rows available.
+Fetches the next row. Returns C<undef> if there are no more rows available.
 
-The C<getrow_hashref> method accepts optional callbacks for further processing
+Default behaviour is for the row to be fetched as a hash reference. If array
+references are preferred, change the C<$DBIx::FlexibleBinding::GETROW_USING>
+package global from C<"getrow_hashref"> to C<"getrow_arrayref">.
+
+The C<getrow> method accepts optional callbacks for further processing
 of the result by the caller.
 
 =cut
@@ -1704,7 +1719,7 @@ sub getrow
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::ObjectProxy;
-our $VERSION = '1.8.2'; # VERSION
+our $VERSION = '1.8.3'; # VERSION
 
 use Carp 'confess';
 use Scalar::Util 'blessed';
@@ -1833,14 +1848,14 @@ sub AUTOLOAD
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::UnassignedProxy;
-our $VERSION = '1.8.2'; # VERSION
+our $VERSION = '1.8.3'; # VERSION
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::DatabaseConnectionProxy;
-our $VERSION = '1.8.2'; # VERSION
+our $VERSION = '1.8.3'; # VERSION
 
 use Carp 'confess';
 
@@ -1849,7 +1864,7 @@ our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
   DBIx::FlexibleBinding::StatementProxy;
-our $VERSION = '1.8.2'; # VERSION
+our $VERSION = '1.8.3'; # VERSION
 
 use Carp 'confess';
 
@@ -1874,7 +1889,7 @@ sub process
 
 package    # Hide from PAUSE
   DBIx::FlexibleBinding::Iterator;
-our $VERSION = '1.8.2'; # VERSION
+our $VERSION = '1.8.3'; # VERSION
 
 use Params::Callbacks 'callbacks';
 

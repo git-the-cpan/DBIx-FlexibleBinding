@@ -3,7 +3,7 @@ NAME
     choice and data binding
 
 VERSION
-    version 1.8.2
+    version 1.8.3
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of
@@ -621,11 +621,15 @@ DATABASE HANDLE METHODS
         @results = $dbh->getrows$statement_handle, @bind_values);
 
     Prepares (if necessary) and executes a single statement with the
-    specified data bindings and fetches the result set as an array of hash
-    references.
+    specified data bindings and fetches the result set.
 
-    The "getrows_hashref" method accepts optional callbacks for further
-    processing of the results by the caller.
+    Default behaviour is for all rows to be fetched as hash references. If
+    array references are preferred, change the
+    $DBIx::FlexibleBinding::GETROWS_USING package global from
+    "getrows_hashref" to "getrows_arrayref".
+
+    The "getrows" method accepts optional callbacks for further processing
+    of the results by the caller.
 
   getrow_arrayref *(database handles)*
         $result = $dbh->getrow_arrayref($statement_string, @bind_values);
@@ -655,10 +659,15 @@ DATABASE HANDLE METHODS
         $result = $dbh->getrow($statement_handle, @bind_values);
 
     Prepares (if necessary) and executes a single statement with the
-    specified data bindings and fetches the first row as a hash reference.
+    specified data bindings and fetches the first row.
 
-    The "getrow_hashref" method accepts optional callbacks for further
-    processing of the result by the caller.
+    Default behaviour is for the row to be fetched as a hash reference. If
+    array references are preferred, change the
+    $DBIx::FlexibleBinding::GETROW_USING package global from
+    "getrow_hashref" to "getrow_arrayref".
+
+    The "getrow" method accepts optional callbacks for further processing of
+    the result by the caller.
 
 STATEMENT HANDLE METHODS
   auto_bind
@@ -1021,10 +1030,15 @@ STATEMENT HANDLE METHODS
         $results = $sth->getrows();
         @results = $sth->getrows();
 
-    Fetches the entire result set as an array of hash references.
+    Fetches the entire result set.
 
-    The "getrows_hashref" method accepts optional callbacks for further
-    processing of the results by the caller.
+    Default behaviour is for all rows to be fetched as hash references. If
+    array references are preferred, change the
+    $DBIx::FlexibleBinding::GETROWS_USING package global from
+    "getrows_hashref" to "getrows_arrayref".
+
+    The "getrows" method accepts optional callbacks for further processing
+    of the results by the caller.
 
   getrow_arrayref *(database handles)*
         $result = $sth->getrow_arrayref();
@@ -1047,11 +1061,16 @@ STATEMENT HANDLE METHODS
   getrow *(database handles)*
         $result = $sth->getrow();
 
-    Fetches the next row as a hash reference. Returns "undef" if there are
-    no more rows available.
+    Fetches the next row. Returns "undef" if there are no more rows
+    available.
 
-    The "getrow_hashref" method accepts optional callbacks for further
-    processing of the result by the caller.
+    Default behaviour is for the row to be fetched as a hash reference. If
+    array references are preferred, change the
+    $DBIx::FlexibleBinding::GETROW_USING package global from
+    "getrow_hashref" to "getrow_arrayref".
+
+    The "getrow" method accepts optional callbacks for further processing of
+    the result by the caller.
 
 EXPORTS
     The following symbols are exported by default:

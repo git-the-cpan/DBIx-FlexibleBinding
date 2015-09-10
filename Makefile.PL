@@ -35,7 +35,7 @@ my %WriteMakefileArgs = (
     "Data::Dumper" => 0,
     "JSON" => 0
   },
-  "VERSION" => "1.8.2",
+  "VERSION" => "1.8.3",
   "test" => {
     "TESTS" => "t/*.t"
   }
