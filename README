@@ -3,7 +3,7 @@ NAME
     choice and data binding
 
 VERSION
-    version 1.8.3
+    version 1.8.4
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of
@@ -267,27 +267,6 @@ PACKAGE GLOBALS
     enabled or disabled globally.
 
     The default setting is "1" (*enabled*).
-
-  $DBIx::FlexibleBinding::GETROWS_USING
-    The subroutines created with the "-subs" import option may be used to
-    retrieve result sets. By default, any such subroutines delegate that
-    particular task to a method called "getrows_hashref", which is provided
-    by this module for both database and statement handles alike.
-
-    It is also used to influence the type of structure the "getrows" methods
-    fetch by default (hashrefs or arrayrefs).
-
-    For reasons of efficiency the developer may prefer array references over
-    hash references, in which case they only need assign the value
-    "getrows_arrayref" to this global.
-
-  $DBIx::FlexibleBinding::GETROW_USING
-    Used to control influence the type of structure the "getrow" methods
-    fetch by default (hashrefs or arrayrefs).
-
-    For reasons of efficiency the developer may prefer array references over
-    hash references, in which case they only need assign the value
-    "getrows_arrayref" to this global.
 
 IMPORT TAGS AND OPTIONS
   -alias
@@ -620,13 +599,10 @@ DATABASE HANDLE METHODS
         $results = $dbh->getrows($statement_handle, @bind_values);
         @results = $dbh->getrows$statement_handle, @bind_values);
 
-    Prepares (if necessary) and executes a single statement with the
-    specified data bindings and fetches the result set.
+    Alias for "getrows_hashref".
 
-    Default behaviour is for all rows to be fetched as hash references. If
-    array references are preferred, change the
-    $DBIx::FlexibleBinding::GETROWS_USING package global from
-    "getrows_hashref" to "getrows_arrayref".
+    If array references are preferred, have the symbol table glob point
+    alias the "getrows_arrayref" method.
 
     The "getrows" method accepts optional callbacks for further processing
     of the results by the caller.
@@ -658,55 +634,15 @@ DATABASE HANDLE METHODS
         $result = $dbh->getrow($statement_string, \%attr, @bind_values);
         $result = $dbh->getrow($statement_handle, @bind_values);
 
-    Prepares (if necessary) and executes a single statement with the
-    specified data bindings and fetches the first row.
+    Alias for "getrow_hashref".
 
-    Default behaviour is for the row to be fetched as a hash reference. If
-    array references are preferred, change the
-    $DBIx::FlexibleBinding::GETROW_USING package global from
-    "getrow_hashref" to "getrow_arrayref".
+    If array references are preferred, have the symbol table glob point
+    alias the "getrows_arrayref" method.
 
     The "getrow" method accepts optional callbacks for further processing of
     the result by the caller.
 
 STATEMENT HANDLE METHODS
-  auto_bind
-        $sth->auto_bind($boolean);
-        $state = $sth->auto_bind();
-
-    Use this method to enable, disable or inspect the current state of
-    automatic binding for a particular statement handle.
-
-  bind
-        $sth->bind(@bind_values);       # For positional and numeric placeholders
-        $sth->bind(\@bind_values);      # For positional and numeric placeholders
-        $sth->bind(%bind_values);       # For numeric and named placeholders
-        $sth->bind(\%bind_values);      # For numeric and named placeholders
-        $sth->bind([%bind_values]);     # For numeric and named placeholders
-
-    The bind method associates (binds) the values supplied in the parameter
-    list with the placeholders embedded in the prepared statement.
-
-    With automatic binding enabled (and it is by default), any operation
-    that results in a subsequent call to the "execute" method will almost
-    certainly complete any parameter binding automatically using this
-    method.
-
-    With automatic binding disabled, this method will not be called at all
-    and the execute method will almost dutifully convey bind values as they
-    are presented up the DBI inheritance chain to the handler's execute
-    method. *Almost dutifully* because a lone array reference will be
-    de-referenced and passed up as a list. The general assumption here is
-    that you won't present any bind values because the hard work of doing
-    the "bind_param" calls has already been done, or a manual call to the
-    "bind" method has already taken place.
-
-    In any case, it's pretty hard to screw-up when relying on this method to
-    bind your data values. Provided that what you present can be interpreted
-    as a list of values for positional placeholders, a list of key-value
-    pairs for named placeholders, or either for numeric placeholders, then
-    you'll be absolutely fine.
-
   bind_param
         $sth->bind_param($param_num, $bind_value)
         $sth->bind_param($param_num, $bind_value, \%attr)
@@ -1030,12 +966,10 @@ STATEMENT HANDLE METHODS
         $results = $sth->getrows();
         @results = $sth->getrows();
 
-    Fetches the entire result set.
+    Alias for "getrows_hashref".
 
-    Default behaviour is for all rows to be fetched as hash references. If
-    array references are preferred, change the
-    $DBIx::FlexibleBinding::GETROWS_USING package global from
-    "getrows_hashref" to "getrows_arrayref".
+    If array references are preferred, have the symbol table glob point
+    alias the "getrows_arrayref" method.
 
     The "getrows" method accepts optional callbacks for further processing
     of the results by the caller.
@@ -1061,13 +995,10 @@ STATEMENT HANDLE METHODS
   getrow *(database handles)*
         $result = $sth->getrow();
 
-    Fetches the next row. Returns "undef" if there are no more rows
-    available.
+    Alias for "getrow_hashref".
 
-    Default behaviour is for the row to be fetched as a hash reference. If
-    array references are preferred, change the
-    $DBIx::FlexibleBinding::GETROW_USING package global from
-    "getrow_hashref" to "getrow_arrayref".
+    If array references are preferred, have the symbol table glob point
+    alias the "getrows_arrayref" method.
 
     The "getrow" method accepts optional callbacks for further processing of
     the result by the caller.

@@ -25,17 +25,16 @@ my %WriteMakefileArgs = (
     "Params::Callbacks" => 0,
     "Scalar::Util" => 0,
     "Sub::Install" => 0,
-    "Test::More" => 0,
-    "YAML::Syck" => 0,
     "namespace::clean" => 0,
     "strict" => 0,
     "warnings" => 0
   },
   "TEST_REQUIRES" => {
     "Data::Dumper" => 0,
-    "JSON" => 0
+    "JSON" => 0,
+    "Test::More" => 0
   },
-  "VERSION" => "1.8.3",
+  "VERSION" => "1.8.4",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -54,7 +53,6 @@ my %FallbackPrereqs = (
   "Scalar::Util" => 0,
   "Sub::Install" => 0,
   "Test::More" => 0,
-  "YAML::Syck" => 0,
   "namespace::clean" => 0,
   "strict" => 0,
   "warnings" => 0

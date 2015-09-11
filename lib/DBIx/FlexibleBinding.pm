@@ -5,7 +5,7 @@ DBIx::FlexibleBinding - Greater flexibility on statement placeholder choice and 
 
 =head1 VERSION
 
-version 1.8.3
+version 1.8.4
 
 =cut
 
@@ -289,7 +289,7 @@ use strict;
 use warnings;
 
 package DBIx::FlexibleBinding;
-our $VERSION = '1.8.3'; # VERSION
+our $VERSION = '1.8.4'; # VERSION
 # ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
 use Carp qw(confess);
 use Exporter ();
@@ -311,41 +311,9 @@ or disabled globally.
 
 The default setting is C<"1"> (I<enabled>).
 
-=head2 $DBIx::FlexibleBinding::GETROWS_USING
-
-The subroutines created with the C<-subs> import option may be used to
-retrieve result sets. By default, any such subroutines delegate that particular
-task to a method called C<"getrows_hashref">, which is provided by this module
-for both database and statement handles alike.
-
-It is also used to influence the type of structure the C<getrows> methods fetch 
-by default (hashrefs or arrayrefs).
-
-For reasons of efficiency the developer may prefer array references over hash
-references, in which case they only need assign the value C<"getrows_arrayref">
-to this global.
-
-=head2 $DBIx::FlexibleBinding::GETROW_USING
-
-Used to control influence the type of structure the C<getrow> methods fetch 
-by default (hashrefs or arrayrefs).
-
-For reasons of efficiency the developer may prefer array references over hash
-references, in which case they only need assign the value C<"getrows_arrayref">
-to this global.
-
 =cut
 
 our $AUTO_BINDING_ENABLED = 1;
-our $GETROWS_USING        = 'getrows_hashref';
-our $GETROW_USING         = 'getrow_hashref';
-
-
-sub _dbix_set_err
-{
-    my ( $handle, @args ) = @_;
-    return $handle->set_err( $DBI::stderr, @args );
-}
 
 =head1 IMPORT TAGS AND OPTIONS
 
@@ -402,7 +370,6 @@ C<use strict> appears afterwards.
 
 =cut
 
-
 sub import
 {
     my ( $package, @args ) = @_;
@@ -423,7 +390,7 @@ sub import
             elsif ( $arg eq '-subs' ) {
                 my $list = shift(@args);
                 confess "Expected anonymous list or array reference after '$arg'"
-                  unless ref($list) && reftype($list) eq 'ARRAY';
+                    unless ref($list) && reftype($list) eq 'ARRAY';
                 $caller->unimport( 'strict', 'subs' );
                 for my $name (@$list) {
                     DBIx::FlexibleBinding::ObjectProxy->create( $name, $caller );
@@ -461,7 +428,6 @@ description of this method.
 
 =cut
 
-
 sub connect
 {
     my ( $invocant, $dsn, $user, $pass, $attr ) = @_;
@@ -471,11 +437,11 @@ sub connect
 }
 
 package    # Hide from PAUSE
-  DBIx::FlexibleBinding::db;
-our $VERSION = '1.8.3'; # VERSION
+    DBIx::FlexibleBinding::db;
+our $VERSION = '1.8.4'; # VERSION
 
-use List::MoreUtils qw(any);
-use Params::Callbacks qw(callbacks);
+use Carp 'confess';
+use Params::Callbacks 'callbacks';
 use namespace::clean;
 
 our @ISA = 'DBI::db';
@@ -545,7 +511,6 @@ cases, referencing a statement attributes hash is neither required nor expected.
 
 =cut
 
-
 sub do
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
@@ -553,7 +518,7 @@ sub do
     if ( !ref($sth) ) {
         my $attr;
         $attr = shift(@bind_values)
-          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
+            if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
         return if $sth->err;
     }
@@ -615,7 +580,6 @@ I<(Yes, even for those MySQL connections!)>
 
 =cut
 
-
 sub prepare
 {
     my ( $dbh, $stmt, @args ) = @_;
@@ -633,24 +597,10 @@ sub prepare
         @params = ( $stmt =~ /\?(\d+)\b/g );
         $stmt =~ s/\?\d+\b/?/g;
     }
+
     my $sth = $dbh->SUPER::prepare( $stmt, @args ) or return;
-    $sth->{private_using_positionals} = 1;
-
-    if (@params) {
-        $sth->{private_auto_binding} = $DBIx::FlexibleBinding::AUTO_BINDING_ENABLED;
-        $sth->{private_numeric_placeholders_only} = ( any { /\D/ } @params ) ? 0 : 1;
-        $sth->{private_param_counts}              = { map { $_ => 0 } @params };
-        $sth->{private_param_order}               = \@params;
-        $sth->{private_using_positionals}         = 0;
-
-        for my $param (@params) {
-            $sth->{private_param_counts}{$param}++;
-        }
-    }
-
-    return $sth;
+    return $sth->_init_private_attributes( \@params );
 }
-
 
 =head2 getrows_arrayref I<(database handles)>
 
@@ -747,7 +697,6 @@ results.
 
 =cut
 
-
 sub getrows_arrayref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
@@ -755,7 +704,7 @@ sub getrows_arrayref
     if ( !ref($sth) ) {
         my $attr;
         $attr = shift(@bind_values)
-          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
+            if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
         return if $sth->err;
     }
@@ -860,7 +809,6 @@ results.
 
 =cut
 
-
 sub getrows_hashref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
@@ -868,7 +816,7 @@ sub getrows_hashref
     if ( !ref($sth) ) {
         my $attr;
         $attr = shift(@bind_values)
-          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
+            if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
         return if $sth->err;
     }
@@ -879,7 +827,6 @@ sub getrows_hashref
     return $sth->getrows_hashref($callbacks);
 }
 
-
 =head2 getrows I<(database handles)>
 
     $results = $dbh->getrows($statement_string, @bind_values);
@@ -889,23 +836,17 @@ sub getrows_hashref
     $results = $dbh->getrows($statement_handle, @bind_values);
     @results = $dbh->getrows$statement_handle, @bind_values);
 
-Prepares (if necessary) and executes a single statement with the specified data
-bindings and fetches the result set.
+Alias for C<getrows_hashref>.
 
-Default behaviour is for all rows to be fetched as hash references. If array
-references are preferred, change the C<$DBIx::FlexibleBinding::GETROWS_USING>
-package global from C<"getrows_hashref"> to C<"getrows_arrayref">.
+If array references are preferred, have the symbol table glob point alias the 
+C<getrows_arrayref> method.
 
 The C<getrows> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =cut
 
-
-sub getrows
-{
-    goto &$DBIx::FlexibleBinding::GETROWS_USING;
-}
+BEGIN { *getrows = \&getrows_hashref }
 
 =head2 getrow_arrayref I<(database handles)>
 
@@ -921,7 +862,6 @@ of the result by the caller.
 
 =cut
 
-
 sub getrow_arrayref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
@@ -929,7 +869,7 @@ sub getrow_arrayref
     if ( !ref($sth) ) {
         my $attr;
         $attr = shift(@bind_values)
-          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
+            if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
         return if $sth->err;
     }
@@ -954,7 +894,6 @@ of the result by the caller.
 
 =cut
 
-
 sub getrow_hashref
 {
     my ( $callbacks, $dbh, $sth, @bind_values ) = &callbacks;
@@ -962,7 +901,7 @@ sub getrow_hashref
     if ( !ref($sth) ) {
         my $attr;
         $attr = shift(@bind_values)
-          if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
+            if ref( $bind_values[0] ) && ref( $bind_values[0] ) eq 'HASH';
         $sth = $dbh->prepare( $sth, $attr );
         return if $sth->err;
     }
@@ -973,164 +912,207 @@ sub getrow_hashref
     return $sth->getrow_hashref($callbacks);
 }
 
-
 =head2 getrow I<(database handles)>
 
     $result = $dbh->getrow($statement_string, @bind_values);
     $result = $dbh->getrow($statement_string, \%attr, @bind_values);
     $result = $dbh->getrow($statement_handle, @bind_values);
 
-Prepares (if necessary) and executes a single statement with the specified data
-bindings and fetches the first row.
+Alias for C<getrow_hashref>.
 
-Default behaviour is for the row to be fetched as a hash reference. If array
-references are preferred, change the C<$DBIx::FlexibleBinding::GETROW_USING>
-package global from C<"getrow_hashref"> to C<"getrow_arrayref">.
+If array references are preferred, have the symbol table glob point alias the 
+C<getrows_arrayref> method.
 
 The C<getrow> method accepts optional callbacks for further processing
 of the result by the caller.
 
 =cut
 
-
-sub getrow
-{
-    goto &$DBIx::FlexibleBinding::GETROW_USING;
-}
+BEGIN { *getrow = \&getrow_hashref }
 
 package    # Hide from PAUSE
-  DBIx::FlexibleBinding::st;
-our $VERSION = '1.8.3'; # VERSION
+    DBIx::FlexibleBinding::st;
+our $VERSION = '1.8.4'; # VERSION
 
-BEGIN {
-    *_dbix_set_err = \&DBIx::FlexibleBinding::_dbix_set_err;
-}
-
-use Params::Callbacks qw(callbacks);
-use Scalar::Util qw(reftype);
+use Carp 'confess';
+use List::MoreUtils 'any';
+use Params::Callbacks 'callbacks';
+use Scalar::Util 'reftype';
 use namespace::clean;
 
 our @ISA = 'DBI::st';
 
-
-sub _bind_array_ref
+sub _init_private_attributes
 {
-    my ( $sth, $array_ref ) = @_;
+    my ( $sth, $params_arrayref ) = @_;
 
-    for ( my $n = 0 ; $n < @$array_ref ; $n++ ) {
-        $sth->bind_param( $n + 1, $array_ref->[$n] );
+    if ( ref($params_arrayref) && reftype($params_arrayref) eq 'ARRAY' ) {
+        $sth->_param_order($params_arrayref);
+        return $sth->_using_positional(1) unless @$params_arrayref;
+
+        $sth->_auto_bind($DBIx::FlexibleBinding::AUTO_BINDING_ENABLED);
+
+        my $param_count = $sth->_param_count;
+        for my $param (@$params_arrayref) {
+            if ( defined $param_count->{$param} ) {
+                $param_count->{$param}++;
+            }
+            else {
+                $param_count->{$param} = 1;
+            }
+        }
+
+        return $sth->_using_named(1) if any {/\D/} @$params_arrayref;
+        return $sth->_using_numbered(1);
     }
 
     return $sth;
 }
 
-
-sub _bind_hash_ref
+sub _auto_bind
 {
-    my ( $sth, $hash_ref ) = @_;
-    $sth->bind_param( $_, $hash_ref->{$_} ) for keys %$hash_ref;
-    return $sth;
-}
-
-=head1 STATEMENT HANDLE METHODS
-
-=cut
-
-=head2 auto_bind
-
-    $sth->auto_bind($boolean);
-    $state = $sth->auto_bind();
-
-Use this method to enable, disable or inspect the current state of automatic
-binding for a particular statement handle.
-
-=cut
-
-
-sub auto_bind
-{
-    my ( $sth, $bool ) = @_;
     if ( @_ > 1 ) {
-        $sth->{private_auto_binding} = $bool ? 1 : 0;
-        return $sth;
+        $_[0]{private_dbix_flexbind}{auto_bind} = !!$_[1];
+        return $_[0];
     }
 
-    return $sth->{private_auto_binding};
+    return $_[0]{private_dbix_flexbind}{auto_bind};
 }
 
-=head2 bind
+sub _param_count
+{
+    if ( @_ > 1 ) {
+        $_[0]{private_dbix_flexbind}{param_count} = $_[1];
+        return $_[0];
+    }
+    else {
+        $_[0]{private_dbix_flexbind}{param_count} = {}
+            unless exists $_[0]{private_dbix_flexbind}{param_count};
+    }
 
-    $sth->bind(@bind_values);       # For positional and numeric placeholders
-    $sth->bind(\@bind_values);      # For positional and numeric placeholders
-    $sth->bind(%bind_values);       # For numeric and named placeholders
-    $sth->bind(\%bind_values);      # For numeric and named placeholders
-    $sth->bind([%bind_values]);     # For numeric and named placeholders
+    return %{ $_[0]{private_dbix_flexbind}{param_count} } if wantarray;
+    return $_[0]{private_dbix_flexbind}{param_count};
+}
 
-The bind method associates (binds) the values supplied in the parameter list with
-the placeholders embedded in the prepared statement.
+sub _param_order
+{
+    if ( @_ > 1 ) {
+        $_[0]{private_dbix_flexbind}{param_order} = $_[1];
+        return $_[0];
+    }
+    else {
+        $_[0]{private_dbix_flexbind}{param_order} = []
+            unless exists $_[0]{private_dbix_flexbind}{param_order};
+    }
 
-With automatic binding enabled (and it is by default), any operation that results
-in a subsequent call to the C<execute> method will almost certainly complete any
-parameter binding automatically using this method.
+    return @{ $_[0]{private_dbix_flexbind}{param_order} } if wantarray;
+    return $_[0]{private_dbix_flexbind}{param_order};
+}
 
-With automatic binding disabled, this method will not be called at all and the
-execute method will almost dutifully convey bind values as they are presented up
-the DBI inheritance chain to the handler's execute method. I<Almost dutifully>
-because a lone array reference will be de-referenced and passed up as a list. The
-general assumption here is that you won't present any bind values because the hard
-work of doing the C<bind_param> calls has already been done, or a manual call to
-the C<bind> method has already taken place.
+sub _using_named
+{
+    if ( @_ > 1 ) {
+        # If new value is true, set alternatives to false to save us the overhead
+        # of making the other two calls that would have had to be made anyway.
+        # Apologies for the terse code, these need to be zippy because they're
+        # called a lot, and often in loops.            +--(naughty assignment)
+        #                                              v
+        if ( $_[0]{private_dbix_flexbind}{using_named} = !!$_[1] ) {
+            $_[0]{private_dbix_flexbind}{using_numbered}   = '';
+            $_[0]{private_dbix_flexbind}{using_positional} = '';
+        }
+        return $_[0];
+    }
 
-In any case, it's pretty hard to screw-up when relying on this method to bind
-your data values. Provided that what you present can be interpreted as a list of
-values for positional placeholders, a list of key-value pairs for named
-placeholders, or either for numeric placeholders, then you'll be absolutely
-fine.
+    return $_[0]{private_dbix_flexbind}{using_named};
+}
 
-=cut
+sub _using_numbered
+{
+    if ( @_ > 1 ) {
+        # If new value is true, set alternatives to false to save us the overhead
+        # of making the other two calls that would have had to be made anyway.
+        # Apologies for the terse code, these need to be zippy because they're
+        # called a lot, and often in loops.               +--(naughty assignment)
+        #                                                 v
+        if ( $_[0]{private_dbix_flexbind}{using_numbered} = !!$_[1] ) {
+            $_[0]{private_dbix_flexbind}{using_named}      = '';
+            $_[0]{private_dbix_flexbind}{using_positional} = '';
+        }
+        return $_[0];
+    }
 
+    return $_[0]{private_dbix_flexbind}{using_numbered};
+}
 
-sub bind
+sub _using_positional
+{
+    if ( @_ > 1 ) {
+        # If new value is true, set alternatives to false to save us the overhead
+        # of making the other two calls that would have had to be made anyway.
+        # Apologies for the terse code, these need to be zippy because they're
+        # called a lot, and often in loops.                 +--(naughty assignment)
+        #                                                   v
+        if ( $_[0]{private_dbix_flexbind}{using_positional} = !!$_[1] ) {
+            $_[0]{private_dbix_flexbind}{using_numbered} = '';
+            $_[0]{private_dbix_flexbind}{using_named}    = '';
+        }
+        return $_[0];
+    }
+
+    return $_[0]{private_dbix_flexbind}{using_positional};
+}
+
+sub _bind_arrayref
+{
+    my ( $sth, $arrayref ) = @_;
+
+    for ( my $n = 0; $n < @$arrayref; $n++ ) {
+        $sth->bind_param( $n + 1, $arrayref->[$n] );
+    }
+
+    return $sth;
+}
+
+sub _bind_hashref
+{
+    my ( $sth, $hashref ) = @_;
+
+    while ( my ( $k, $v ) = each %$hashref ) {
+        $sth->bind_param( $k, $v );
+    }
+
+    return $sth;
+}
+
+sub _bind
 {
     my ( $sth, @args ) = @_;
     return $sth unless @args;
-    return $sth->_bind_array_ref( \@args ) if $sth->{private_using_positionals};
+    return $sth->_bind_arrayref( \@args ) if $sth->_using_positional;
 
     my $ref = ( @args == 1 ) && reftype( $args[0] );
 
     if ($ref) {
-
-        return
-          _dbix_set_err( $sth,
-                  'A reference to either a HASH or ARRAY was expected for autobind operation' )
-          unless $ref eq 'HASH' || $ref eq 'ARRAY';
-
-        if ( $ref eq 'HASH' ) {
-            $sth->_bind_hash_ref( $args[0] );
+        unless ( $ref eq 'HASH' || $ref eq 'ARRAY' ) {
+            return $sth->set_err( $DBI::stderr, 'Expected a reference to a HASH or ARRAY' );
         }
-        else {
-            if ( $sth->{private_numeric_placeholders_only} ) {
-                $sth->_bind_array_ref( $args[0] );
-            }
-            else {
-                $sth->_bind_hash_ref( { @{ $args[0] } } );
-            }
-        }
+
+        return $sth->_bind_hashref( $args[0] )  if $ref eq 'HASH';
+        return $sth->_bind_arrayref( $args[0] ) if $sth->_using_numbered;
+        return $sth->_bind_hashref( { @{ $args[0] } } );
     }
     else {
         if (@args) {
-            if ( $sth->{private_numeric_placeholders_only} ) {
-                $sth->_bind_array_ref( \@args );
-            }
-            else {
-                $sth->_bind_hash_ref( {@args} );
-            }
+            return $sth->_bind_arrayref( \@args ) if $sth->_using_numbered;
+            return $sth->_bind_hashref( {@args} );
         }
     }
 
     return $sth;
 }
 
+=head1 STATEMENT HANDLE METHODS
 
 =head2 bind_param
 
@@ -1149,34 +1131,40 @@ parameter names, if appropriate, in addition to parameter positions.
 I<Refer to L<http://search.cpan.org/dist/DBI/DBI.pm#bind_param> for a more detailed
 explanation of how to use this method>.
 
-
 =cut
-
 
 sub bind_param
 {
     my ( $sth, $param, $value, $attr ) = @_;
-    return _dbix_set_err( $sth, "Binding identifier is missing" )
-      unless defined($param) && $param;
 
-    return _dbix_set_err( $sth, 'Binding identifier "' . $param . '" is malformed' )
-      if $param =~ /[^\@\w]/;
+    unless ( !!$param ) {
+        return $sth->set_err( $DBI::stderr, "Binding identifier is missing" );
+    }
 
-    return $sth->SUPER::bind_param( $param, $value, $attr )
-      if $sth->{private_using_positionals};
+    if ( $param =~ /[^\@\w]/ ) {
+        return $sth->set_err( $DBI::stderr,
+                              'Malformed binding identifier "' . $param . '"' );
+    }
 
-    my $bind_rv = undef;
-    my $pos     = 0;
-    my $count   = 0;
+    my $bind_rv;
 
-    for my $name_or_number ( @{ $sth->{private_param_order} } ) {
-        $pos += 1;
-        next if $name_or_number ne $param;
+    if ( $sth->_using_positional ) {
+        $bind_rv = $sth->SUPER::bind_param( $param, $value, $attr );
+    }
+    else {
+        my $pos         = 0;
+        my $count       = 0;
+        my $param_count = $sth->_param_count;
 
-        $count += 1;
-        last if $count > $sth->{private_param_counts}{$param};
+        for my $identifier ( $sth->_param_order ) {
+            $pos++;
 
-        $bind_rv = $sth->SUPER::bind_param( $pos, $value, $attr );
+            if ( $identifier eq $param ) {
+                $count++;
+                last if $count > $param_count->{$param};
+                $bind_rv = $sth->SUPER::bind_param( $pos, $value, $attr );
+            }
+        }
     }
 
     return $bind_rv;
@@ -1280,14 +1268,13 @@ B<Examples>
 
 =cut
 
-
 sub execute
 {
     my ( $sth, @bind_values ) = @_;
     my $rows;
 
-    if ( $sth->{private_auto_binding} ) {
-        $sth->bind(@bind_values);
+    if ( $sth->_auto_bind ) {
+        $sth->_bind(@bind_values);
         $rows = $sth->SUPER::execute();
     }
     else {
@@ -1302,9 +1289,8 @@ sub execute
         }
     }
 
-    return ( $rows == 0 ) ? '0E0' : $rows;
+    return $rows;
 }
-
 
 =head2 iterate
 
@@ -1506,45 +1492,12 @@ C<while> loop and an empty declaration for C<@rows>.
 
 =cut
 
-
-sub iterate_arrayref
-{
-    my ( $callbacks, $sth, @bind_values ) = &callbacks;
-    my $rows = $sth->execute(@bind_values);
-    return $rows unless defined $rows;
-    return bless(
-        sub {
-            return $sth->getrow_arrayref($callbacks);
-        },
-        'DBIx::FlexibleBinding::Iterator'
-    );
-}
-
-
-sub iterate_hashref
-{
-    my ( $callbacks, $sth, @bind_values ) = &callbacks;
-    my $rows = $sth->execute(@bind_values);
-    return $rows unless defined $rows;
-    return bless(
-        sub {
-            return $sth->getrow_hashref($callbacks);
-        },
-        'DBIx::FlexibleBinding::Iterator'
-    );
-}
-
 sub iterate
 {
     my ( $callbacks, $sth, @bind_values ) = &callbacks;
     my $rows = $sth->execute(@bind_values);
     return $rows unless defined $rows;
-    return bless(
-        sub {
-            return $sth->getrow($callbacks);
-        },
-        'DBIx::FlexibleBinding::Iterator'
-    );
+    DBIx::FlexibleBinding::Iterator->new( sub { $sth->getrow($callbacks) } );
 }
 
 =head2 getrows_arrayref I<(database handles)>
@@ -1558,7 +1511,6 @@ The C<getrows_arrayref> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =cut
-
 
 sub getrows_arrayref
 {
@@ -1590,7 +1542,6 @@ of the results by the caller.
 
 =cut
 
-
 sub getrows_hashref
 {
     local $_;
@@ -1609,28 +1560,22 @@ sub getrows_hashref
     return wantarray ? @$result : $result;
 }
 
-
 =head2 getrows I<(database handles)>
 
     $results = $sth->getrows();
     @results = $sth->getrows();
 
-Fetches the entire result set.
+Alias for C<getrows_hashref>.
 
-Default behaviour is for all rows to be fetched as hash references. If array
-references are preferred, change the C<$DBIx::FlexibleBinding::GETROWS_USING>
-package global from C<"getrows_hashref"> to C<"getrows_arrayref">.
+If array references are preferred, have the symbol table glob point alias the 
+C<getrows_arrayref> method.
 
 The C<getrows> method accepts optional callbacks for further processing
 of the results by the caller.
 
 =cut
 
-
-sub getrows
-{
-    goto &$DBIx::FlexibleBinding::GETROWS_USING;
-}
+BEGIN { *getrows = \&getrows_hashref }
 
 =head2 getrow_arrayref I<(database handles)>
 
@@ -1643,7 +1588,6 @@ The C<getrow_arrayref> method accepts optional callbacks for further processing
 of the result by the caller.
 
 =cut
-
 
 sub getrow_arrayref
 {
@@ -1664,7 +1608,6 @@ sub getrow_arrayref
     return $result;
 }
 
-
 =head2 getrow_hashref I<(database handles)>
 
     $result = $sth->getrow_hashref();
@@ -1676,7 +1619,6 @@ The C<getrow_hashref> method accepts optional callbacks for further processing
 of the result by the caller.
 
 =cut
-
 
 sub getrow_hashref
 {
@@ -1695,54 +1637,47 @@ sub getrow_hashref
     return $result;
 }
 
-
 =head2 getrow I<(database handles)>
 
     $result = $sth->getrow();
 
-Fetches the next row. Returns C<undef> if there are no more rows available.
+Alias for C<getrow_hashref>.
 
-Default behaviour is for the row to be fetched as a hash reference. If array
-references are preferred, change the C<$DBIx::FlexibleBinding::GETROW_USING>
-package global from C<"getrow_hashref"> to C<"getrow_arrayref">.
+If array references are preferred, have the symbol table glob point alias the 
+C<getrows_arrayref> method.
 
 The C<getrow> method accepts optional callbacks for further processing
 of the result by the caller.
 
 =cut
 
-
-sub getrow
-{
-    goto &$DBIx::FlexibleBinding::GETROW_USING;
-}
+BEGIN { *getrow = \&getrow_hashref }
 
 package    # Hide from PAUSE
-  DBIx::FlexibleBinding::ObjectProxy;
-our $VERSION = '1.8.3'; # VERSION
+    DBIx::FlexibleBinding::ObjectProxy;
+our $VERSION = '1.8.4'; # VERSION
 
 use Carp 'confess';
 use Scalar::Util 'blessed';
 use Sub::Install ();
 use namespace::clean;
 
-use Test::More;
-use YAML::Syck 'Dump';
-
 our $AUTOLOAD;
 
 my %proxies;
-
 
 sub create
 {
     my ( $class, $name, $caller ) = @_;
     $class = ref($class) || $class;
     Sub::Install::install_sub(
-            { code => sub { $class->handle( $name, @_ ) }, into => $caller, as => $name } );
+        { code => sub { $class->handle( $name, @_ ) },
+          into => $caller,
+          as   => $name
+        }
+    );
     return $class->get($name);
 }
-
 
 sub handle
 {
@@ -1774,7 +1709,6 @@ sub handle
     return $self->{target};
 }
 
-
 sub get
 {
     my ( $class, $name, @args ) = @_;
@@ -1789,14 +1723,12 @@ sub get
     return ( $self, $name, @args );
 }
 
-
 sub assign_nothing
 {
     my ($self) = @_;
     delete $self->{target} if exists $self->{target};
     return bless( $self, 'DBIx::FlexibleBinding::UnassignedProxy' );
 }
-
 
 sub assign_database_connection
 {
@@ -1806,17 +1738,16 @@ sub assign_database_connection
         confess "Expected a database handle" unless $args[0]->isa('DBI::db');
         $self->{target} = $args[0];
         bless $self->{target}, 'DBIx::FlexibleBinding::db'
-          unless $self->{target}->isa('DBIx::FlexibleBinding::db');
+            unless $self->{target}->isa('DBIx::FlexibleBinding::db');
     }
     else {
         confess "Expected a set of database connection parameters"
-          unless $args[0] =~ /^dbi:/i;
+            unless $args[0] =~ /^dbi:/i;
         $self->{target} = DBIx::FlexibleBinding->connect(@args);
     }
 
     return bless( $self, 'DBIx::FlexibleBinding::DatabaseConnectionProxy' );
 }
-
 
 sub assign_statement
 {
@@ -1825,10 +1756,9 @@ sub assign_statement
     confess "Expected a statement handle" unless $args[0]->isa('DBI::st');
     $self->{target} = $args[0];
     bless $self->{target}, 'DBIx::FlexibleBinding::st'
-      unless $self->{target}->isa('DBIx::FlexibleBinding::st');
+        unless $self->{target}->isa('DBIx::FlexibleBinding::st');
     return bless( $self, 'DBIx::FlexibleBinding::StatementProxy' );
 }
-
 
 sub AUTOLOAD
 {
@@ -1845,31 +1775,27 @@ sub AUTOLOAD
     goto &$AUTOLOAD;
 }
 
-
 package                      # Hide from PAUSE
-  DBIx::FlexibleBinding::UnassignedProxy;
-our $VERSION = '1.8.3'; # VERSION
+    DBIx::FlexibleBinding::UnassignedProxy;
+our $VERSION = '1.8.4'; # VERSION
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
-
 package                      # Hide from PAUSE
-  DBIx::FlexibleBinding::DatabaseConnectionProxy;
-our $VERSION = '1.8.3'; # VERSION
+    DBIx::FlexibleBinding::DatabaseConnectionProxy;
+our $VERSION = '1.8.4'; # VERSION
 
 use Carp 'confess';
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
-
 package                      # Hide from PAUSE
-  DBIx::FlexibleBinding::StatementProxy;
-our $VERSION = '1.8.3'; # VERSION
+    DBIx::FlexibleBinding::StatementProxy;
+our $VERSION = '1.8.4'; # VERSION
 
 use Carp 'confess';
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
-
 
 sub process
 {
@@ -1884,15 +1810,26 @@ sub process
         }
     }
 
-    return $self->{target}->$GETROWS_USING(@args);
+    return $self->{target}->getrows(@args);
 }
 
 package    # Hide from PAUSE
-  DBIx::FlexibleBinding::Iterator;
-our $VERSION = '1.8.3'; # VERSION
+    DBIx::FlexibleBinding::Iterator;
+our $VERSION = '1.8.4'; # VERSION
 
+use Carp 'confess';
 use Params::Callbacks 'callbacks';
+use Scalar::Util 'reftype';
+use namespace::clean;
 
+sub new
+{
+    my ( $class, $coderef ) = @_;
+    confess "Expected a code reference"
+        unless ref($coderef) && reftype($coderef) eq 'CODE';
+    $class = ref($class) || $class;
+    bless $coderef, $class;
+}
 
 sub for_each
 {
