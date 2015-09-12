@@ -3,7 +3,7 @@ NAME
     choice and data binding
 
 VERSION
-    version 1.8.4
+    version 2.0.0
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of

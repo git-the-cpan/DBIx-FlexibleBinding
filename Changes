@@ -1,3 +1,8 @@
+2.0.0     2015-09-12 09:25:03+01:00 Europe/London
+    - No functional changes. Recent move back to Semantic Versioning has caused 
+      some problems resulting in bug report 107048. Upon advice received, issuing
+      a new release with an uptick in major version number.
+      
 1.8.4     2015-09-11 18:23:21+01:00 Europe/London
     - The extension's private statement handle attributes now consolidated under
       a single statement handle private attribute key {private_dbix_flexbind} per

@@ -5,7 +5,7 @@ DBIx::FlexibleBinding - Greater flexibility on statement placeholder choice and 
 
 =head1 VERSION
 
-version 1.8.4
+version 2.0.0
 
 =cut
 
@@ -289,7 +289,7 @@ use strict;
 use warnings;
 
 package DBIx::FlexibleBinding;
-our $VERSION = '1.8.4'; # VERSION
+our $VERSION = '2.0.0'; # VERSION
 # ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
 use Carp qw(confess);
 use Exporter ();
@@ -438,7 +438,7 @@ sub connect
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::db;
-our $VERSION = '1.8.4'; # VERSION
+our $VERSION = '2.0.0'; # VERSION
 
 use Carp 'confess';
 use Params::Callbacks 'callbacks';
@@ -932,7 +932,7 @@ BEGIN { *getrow = \&getrow_hashref }
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::st;
-our $VERSION = '1.8.4'; # VERSION
+our $VERSION = '2.0.0'; # VERSION
 
 use Carp 'confess';
 use List::MoreUtils 'any';
@@ -1655,7 +1655,7 @@ BEGIN { *getrow = \&getrow_hashref }
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::ObjectProxy;
-our $VERSION = '1.8.4'; # VERSION
+our $VERSION = '2.0.0'; # VERSION
 
 use Carp 'confess';
 use Scalar::Util 'blessed';
@@ -1777,13 +1777,13 @@ sub AUTOLOAD
 
 package                      # Hide from PAUSE
     DBIx::FlexibleBinding::UnassignedProxy;
-our $VERSION = '1.8.4'; # VERSION
+our $VERSION = '2.0.0'; # VERSION
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
     DBIx::FlexibleBinding::DatabaseConnectionProxy;
-our $VERSION = '1.8.4'; # VERSION
+our $VERSION = '2.0.0'; # VERSION
 
 use Carp 'confess';
 
@@ -1791,7 +1791,7 @@ our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
     DBIx::FlexibleBinding::StatementProxy;
-our $VERSION = '1.8.4'; # VERSION
+our $VERSION = '2.0.0'; # VERSION
 
 use Carp 'confess';
 
@@ -1815,7 +1815,7 @@ sub process
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::Iterator;
-our $VERSION = '1.8.4'; # VERSION
+our $VERSION = '2.0.0'; # VERSION
 
 use Carp 'confess';
 use Params::Callbacks 'callbacks';
