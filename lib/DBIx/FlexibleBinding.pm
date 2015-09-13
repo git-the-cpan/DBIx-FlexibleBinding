@@ -5,7 +5,7 @@ DBIx::FlexibleBinding - Greater flexibility on statement placeholder choice and 
 
 =head1 VERSION
 
-version 2.0.0
+version 2.0.1
 
 =cut
 
@@ -287,14 +287,14 @@ use later as representations of database and statement handles.
 
 use strict;
 use warnings;
+use MRO::Compat 'c3';
 
 package DBIx::FlexibleBinding;
-our $VERSION = '2.0.0'; # VERSION
+our $VERSION = '2.0.1'; # VERSION
 # ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
 use Carp qw(confess);
 use Exporter ();
 use DBI      ();
-use MRO::Compat 'c3';
 use Scalar::Util qw(reftype);
 use namespace::clean;
 use Params::Callbacks 'callback';
@@ -433,12 +433,12 @@ sub connect
     my ( $invocant, $dsn, $user, $pass, $attr ) = @_;
     $attr = {} unless defined $attr;
     $attr->{RootClass} = ref($invocant) || $invocant unless defined $attr->{RootClass};
-    return $invocant->SUPER::connect( $dsn, $user, $pass, $attr );
+    return $invocant->next::method( $dsn, $user, $pass, $attr );
 }
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::db;
-our $VERSION = '2.0.0'; # VERSION
+our $VERSION = '2.0.1'; # VERSION
 
 use Carp 'confess';
 use Params::Callbacks 'callbacks';
@@ -598,7 +598,7 @@ sub prepare
         $stmt =~ s/\?\d+\b/?/g;
     }
 
-    my $sth = $dbh->SUPER::prepare( $stmt, @args ) or return;
+    my $sth = $dbh->next::method( $stmt, @args ) or return;
     return $sth->_init_private_attributes( \@params );
 }
 
@@ -932,7 +932,7 @@ BEGIN { *getrow = \&getrow_hashref }
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::st;
-our $VERSION = '2.0.0'; # VERSION
+our $VERSION = '2.0.1'; # VERSION
 
 use Carp 'confess';
 use List::MoreUtils 'any';
@@ -1149,7 +1149,7 @@ sub bind_param
     my $bind_rv;
 
     if ( $sth->_using_positional ) {
-        $bind_rv = $sth->SUPER::bind_param( $param, $value, $attr );
+        $bind_rv = $sth->next::method( $param, $value, $attr );
     }
     else {
         my $pos         = 0;
@@ -1162,7 +1162,7 @@ sub bind_param
             if ( $identifier eq $param ) {
                 $count++;
                 last if $count > $param_count->{$param};
-                $bind_rv = $sth->SUPER::bind_param( $pos, $value, $attr );
+                $bind_rv = $sth->next::method( $pos, $value, $attr );
             }
         }
     }
@@ -1275,17 +1275,17 @@ sub execute
 
     if ( $sth->_auto_bind ) {
         $sth->_bind(@bind_values);
-        $rows = $sth->SUPER::execute();
+        $rows = $sth->next::method();
     }
     else {
         if (    @bind_values == 1
              && ref( $bind_values[0] )
              && reftype( $bind_values[0] ) eq 'ARRAY' )
         {
-            $rows = $sth->SUPER::execute( @{ $bind_values[0] } );
+            $rows = $sth->next::method( @{ $bind_values[0] } );
         }
         else {
-            $rows = $sth->SUPER::execute(@bind_values);
+            $rows = $sth->next::method(@bind_values);
         }
     }
 
@@ -1655,7 +1655,7 @@ BEGIN { *getrow = \&getrow_hashref }
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::ObjectProxy;
-our $VERSION = '2.0.0'; # VERSION
+our $VERSION = '2.0.1'; # VERSION
 
 use Carp 'confess';
 use Scalar::Util 'blessed';
@@ -1777,13 +1777,13 @@ sub AUTOLOAD
 
 package                      # Hide from PAUSE
     DBIx::FlexibleBinding::UnassignedProxy;
-our $VERSION = '2.0.0'; # VERSION
+our $VERSION = '2.0.1'; # VERSION
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
     DBIx::FlexibleBinding::DatabaseConnectionProxy;
-our $VERSION = '2.0.0'; # VERSION
+our $VERSION = '2.0.1'; # VERSION
 
 use Carp 'confess';
 
@@ -1791,7 +1791,7 @@ our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
     DBIx::FlexibleBinding::StatementProxy;
-our $VERSION = '2.0.0'; # VERSION
+our $VERSION = '2.0.1'; # VERSION
 
 use Carp 'confess';
 
@@ -1815,7 +1815,7 @@ sub process
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::Iterator;
-our $VERSION = '2.0.0'; # VERSION
+our $VERSION = '2.0.1'; # VERSION
 
 use Carp 'confess';
 use Params::Callbacks 'callbacks';
