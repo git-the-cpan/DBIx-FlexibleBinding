@@ -290,8 +290,8 @@ use warnings;
 use MRO::Compat 'c3';
 
 package DBIx::FlexibleBinding;
-our $VERSION = '2.0.1'; # VERSION
-# ABSTRACT: Greater flexibility on statement placeholder choice and data binding.
+our $VERSION = '2.0.2'; # VERSION
+# ABSTRACT: Adds more statement placeholder and data-binding flexibility.
 use Carp qw(confess);
 use Exporter ();
 use DBI      ();
@@ -438,7 +438,7 @@ sub connect
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::db;
-our $VERSION = '2.0.1'; # VERSION
+our $VERSION = '2.0.2'; # VERSION
 
 use Carp 'confess';
 use Params::Callbacks 'callbacks';
@@ -932,7 +932,7 @@ BEGIN { *getrow = \&getrow_hashref }
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::st;
-our $VERSION = '2.0.1'; # VERSION
+our $VERSION = '2.0.2'; # VERSION
 
 use Carp 'confess';
 use List::MoreUtils 'any';
@@ -1655,7 +1655,7 @@ BEGIN { *getrow = \&getrow_hashref }
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::ObjectProxy;
-our $VERSION = '2.0.1'; # VERSION
+our $VERSION = '2.0.2'; # VERSION
 
 use Carp 'confess';
 use Scalar::Util 'blessed';
@@ -1777,13 +1777,13 @@ sub AUTOLOAD
 
 package                      # Hide from PAUSE
     DBIx::FlexibleBinding::UnassignedProxy;
-our $VERSION = '2.0.1'; # VERSION
+our $VERSION = '2.0.2'; # VERSION
 
 our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
     DBIx::FlexibleBinding::DatabaseConnectionProxy;
-our $VERSION = '2.0.1'; # VERSION
+our $VERSION = '2.0.2'; # VERSION
 
 use Carp 'confess';
 
@@ -1791,7 +1791,7 @@ our @ISA = 'DBIx::FlexibleBinding::ObjectProxy';
 
 package                      # Hide from PAUSE
     DBIx::FlexibleBinding::StatementProxy;
-our $VERSION = '2.0.1'; # VERSION
+our $VERSION = '2.0.2'; # VERSION
 
 use Carp 'confess';
 
@@ -1815,7 +1815,7 @@ sub process
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::Iterator;
-our $VERSION = '2.0.1'; # VERSION
+our $VERSION = '2.0.2'; # VERSION
 
 use Carp 'confess';
 use Params::Callbacks 'callbacks';
@@ -1918,6 +1918,8 @@ L<http://search.cpan.org/dist/DBIx-FlexibleBinding/>
 =back
 
 =head1 ACKNOWLEDGEMENTS
+
+Many, many thanks to the CPANTesters network.
 
 Test data set extracted from Fuzzwork's MySQL conversion of CCP's EVE Online Static
 Data Export:

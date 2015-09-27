@@ -11,6 +11,9 @@ requires "strict" => "0";
 requires "warnings" => "0";
 
 on 'test' => sub {
+  requires "DBD::CSV" => "0";
+  requires "DBD::SQLite" => "0";
+  requires "DBD::mysql" => "0";
   requires "Data::Dumper" => "0";
   requires "JSON" => "0";
   requires "Test::More" => "0";

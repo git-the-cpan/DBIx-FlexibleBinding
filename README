@@ -1054,6 +1054,8 @@ SUPPORT
         <http://search.cpan.org/dist/DBIx-FlexibleBinding/>
 
 ACKNOWLEDGEMENTS
+    Many, many thanks to the CPANTesters network.
+
     Test data set extracted from Fuzzwork's MySQL conversion of CCP's EVE
     Online Static Data Export:
 

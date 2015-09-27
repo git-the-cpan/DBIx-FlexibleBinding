@@ -3,6 +3,9 @@ abstract: 'Greater flexibility on statement placeholder choice and data binding'
 author:
   - 'Iain Campbell <cpanic@cpan.org>'
 build_requires:
+  DBD::CSV: '0'
+  DBD::SQLite: '0'
+  DBD::mysql: '0'
   Data::Dumper: '0'
   JSON: '0'
   Test::More: '0'
@@ -28,4 +31,4 @@ requires:
   namespace::clean: '0'
   strict: '0'
   warnings: '0'
-version: 2.0.1
+version: 2.0.2

@@ -30,11 +30,14 @@ my %WriteMakefileArgs = (
     "warnings" => 0
   },
   "TEST_REQUIRES" => {
+    "DBD::CSV" => 0,
+    "DBD::SQLite" => 0,
+    "DBD::mysql" => 0,
     "Data::Dumper" => 0,
     "JSON" => 0,
     "Test::More" => 0
   },
-  "VERSION" => "2.0.1",
+  "VERSION" => "2.0.2",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -43,6 +46,9 @@ my %WriteMakefileArgs = (
 
 my %FallbackPrereqs = (
   "Carp" => 0,
+  "DBD::CSV" => 0,
+  "DBD::SQLite" => 0,
+  "DBD::mysql" => 0,
   "DBI" => 0,
   "Data::Dumper" => 0,
   "Exporter" => 0,
