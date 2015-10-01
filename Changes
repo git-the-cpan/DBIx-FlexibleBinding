@@ -1,3 +1,15 @@
+2.0.3     2015-10-01 20:18:14+01:00 Europe/London
+    - Maintenance release.
+    
+    - Improved test coverage.
+    
+    - Pretty much every function has been cleaned up a little.
+    
+    - A lot of cruft associated with injected function representing db and st
+      objects (proxies) has now been swept away.
+    
+    - General improvements but no earth-shattering new features.
+    
 2.0.2     2015-09-27 19:02:59+01:00 Europe/London
     - Problems with some of the tests when MySQL driver is loaded but MySQL
     connection not possible.

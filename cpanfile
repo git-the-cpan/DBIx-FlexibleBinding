@@ -1,23 +1,19 @@
-requires "Carp" => "0";
 requires "DBI" => "0";
-requires "Exporter" => "0";
 requires "List::MoreUtils" => "0";
 requires "MRO::Compat" => "0";
+requires "Message::String" => "0";
 requires "Params::Callbacks" => "0";
-requires "Scalar::Util" => "0";
-requires "Sub::Install" => "0";
+requires "Sub::Util" => "0";
 requires "namespace::clean" => "0";
-requires "strict" => "0";
-requires "warnings" => "0";
+requires "perl" => "v5.8.8";
 
 on 'test' => sub {
   requires "DBD::CSV" => "0";
   requires "DBD::SQLite" => "0";
   requires "DBD::mysql" => "0";
-  requires "Data::Dumper" => "0";
+  requires "Data::Dumper::Concise" => "0";
   requires "JSON" => "0";
-  requires "Test::More" => "0";
-  requires "perl" => "5.006";
+  requires "perl" => "v5.8.8";
 };
 
 on 'configure' => sub {

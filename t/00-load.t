@@ -1,32 +1,30 @@
 #!perl
 use 5.006;
-use strict;
+use strict 'refs', 'vars';
 use warnings;
-use Data::Dumper;
+use Data::Dumper::Concise;
 use JSON;
 use Test::More;
 
 $Data::Dumper::Terse  = 1;
 $Data::Dumper::Indent = 0;
 
-BEGIN
-{
+BEGIN {
     use_ok(
-        'DBIx::FlexibleBinding', -alias => 'DBIx::FB',
-        -subs => [ 'DB', 'statement' ]
+        'DBIx::FlexibleBinding', -as => 'DBIx::FB',
+        -subs => ['DB'], -subs => 'statement', -subs => undef,
     ) || print "Bail out!\n";
 }
 
 diag
     "Testing DBIx::FlexibleBinding $DBIx::FlexibleBinding::VERSION, Perl $], $^X";
 
-my $drivers = 'CSV|SQLite|mysql';
+my $drivers = $ENV{TEST_DRIVER} || 'CSV|SQLite|mysql';
 my @drivers = grep {/^(?:$drivers)$/} DBI->available_drivers();
 
 SKIP:
 {
-    unless ( @drivers )
-    {
+    unless ( @drivers ) {
         my $list_of_drivers = join( ', ', map {"DBD::$_"} split( /\|/, $drivers ) );
         skip
             "Tests require at least one of these DBI drivers to execute: $list_of_drivers",
@@ -93,33 +91,67 @@ EOF
     my $name1_placeholders = join( ', ', map {":$_"} @headings );
     my $name2_placeholders = join( ', ', map {"\@$_"} @headings );
 
-    for my $driver ( @drivers )
-    {
+    is_deeply(scalar(DBIx::FlexibleBinding::_as_list_or_ref([])), [], '_as_list_or_ref');
+    is_deeply(scalar(DBIx::FlexibleBinding::_as_list_or_ref(undef)), undef, '_as_list_or_ref');
+    is_deeply([DBIx::FlexibleBinding::_as_list_or_ref(undef)], [], '_as_list_or_ref');
+    is_deeply([DBIx::FlexibleBinding::_as_list_or_ref([])], [], '_as_list_or_ref');
+
+    my $n_keys = keys %::;
+    DBIx::FlexibleBinding->_create_namespace_alias();
+    is(scalar(keys %::), $n_keys);
+    DBIx::FlexibleBinding->_create_namespace_alias('Foo');
+    isnt(scalar(keys %::), $n_keys);
+
+    DB( undef );
+    is( DB, undef );
+
+    eval {
+        DB( sub { } );
+    };
+    like( $@, qr/CRIT_PROXY_UNDEF/ );
+
+    eval {
+        DB( bless( sub { }, 'Not_st_or_db' ) );
+    };
+    like( $@, qr/CRIT_EXP_HANDLE/ );
+
+    eval { DBIx::FlexibleBinding->import('-unexp_arg') };
+    like( $@, qr/CRIT_UNEXP_ARG/ );
+
+    eval { DBIx::FlexibleBinding->_create_dbi_handle_proxies('Foo', sub {}) };
+    like( $@, qr/CRIT_EXP_SUB_NAMES/ );
+
+    for my $driver ( @drivers ) {
         SKIP:
         {
             my ( $rv, $create_copy, $dbh, $dsn, @user, $attr )
                 = ( undef, undef, undef, undef, (), {} );
 
-            if ( $driver eq 'CSV' )
-            {
+            if ( $driver eq 'CSV' ) {
                 ( $dsn, @user, $attr ) = ( "dbi:$driver:", '', '', { f_dir => '.' } );
                 $create_copy = $create;
                 s/ DEFAULT NULL//g, s/ DOUBLE/ REAL/g, s/ (?:TINYINT|INT)/ INTEGER/g
                     for $create_copy;
                 $dbh = DB( $dsn, @user, $attr );
+
+                DB( $dbh );
+                is( DB, $dbh );
             }
-            elsif ( $driver eq 'SQLite' )
-            {
+            elsif ( $driver eq 'SQLite' ) {
                 ( $dsn, @user, $attr ) = ( "dbi:$driver:test.db", '', '', {} );
                 $create_copy = $create;
                 $dbh = DB( $dsn, @user, $attr );
+
+                DB( $dbh );
+                is( DB, $dbh );
             }
-            else
-            {
+            else {
                 ( $dsn, @user, $attr ) = (
                                          "dbi:$driver:test;host=127.0.0.1", $ENV{MYSQL_TEST_USER},
                                          $ENV{MYSQL_TEST_PASS},             $attr );
-                eval { $dbh = DB( $dsn, @user ) };
+                $dbh = DB( $dsn, @user, $attr );
+                DB( $dbh );
+                is( DB, $dbh );
                 $create_copy = $create;
             }
 
@@ -129,18 +161,15 @@ EOF
             # Yay, we got a connection, and compile-time tagging clearly works!
             is( ref( DB ), 'DBIx::FlexibleBinding::db', "Testing DBD\::$driver ($dsn)" );
 
-            unless ( $ENV{TEST_NO_RELOAD} )
-            {
+            unless ( $ENV{TEST_NO_RELOAD} ) {
                 # Drop the "mapsolarsystems" table
                 $rv = $dbh->do( 'DROP TABLE IF EXISTS mapsolarsystems' );
-                if ( $driver eq 'CSV' )
-                {
+                if ( $driver eq 'CSV' ) {
                     is( $rv, -1, "drop" )
                         ; # Table drop won't do anything useful, delete the table's CSV file manually
                     unlink './mapsolarsystems';
                 }
-                else
-                {
+                else {
                     is( $rv, '0E0', "drop" );    # Table was dropped
                 }
 
@@ -151,11 +180,9 @@ EOF
                 # Populate the "mapsolarsystems" table
                 my $count     = 0;
                 my @test_data = @{$test_data};
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 440 )
-                    {
+                    if ( $count > 440 ) {
                         $count -= 1;
                         last;
                     }
@@ -168,11 +195,9 @@ EOF
                 is( $count, 440, "insert ? ( VALUES )" )
                     ;    # do/INSERTs successful using positionals and list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 881 )
-                    {
+                    if ( $count > 881 ) {
                         $count -= 1;
                         last;
                     }
@@ -185,11 +210,9 @@ EOF
                 is( $count, 881, "insert ? [ VALUES ]" )
                     ;    # do/INSERTs successful using positionals and list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 1362 )
-                    {
+                    if ( $count > 1362 ) {
                         $count -= 1;
                         last;
                     }
@@ -201,11 +224,9 @@ EOF
                 is( $count, 1362, "insert :NUMBER ( VALUES )" )
                     ;    # do/INSERTs successful using :N and list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 1762 )
-                    {
+                    if ( $count > 1762 ) {
                         $count -= 1;
                         last;
                     }
@@ -217,11 +238,9 @@ EOF
                 is( $count, 1762, "insert :NUMBER [ VALUES ]" )
                     ;    # do/INSERTs successful using :N and anonymous list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 2243 )
-                    {
+                    if ( $count > 2243 ) {
                         $count -= 1;
                         last;
                     }
@@ -233,11 +252,9 @@ EOF
                 is( $count, 2243, "insert ?NUMBER ( VALUES )" )
                     ;    # do/INSERTs successful using ?N and list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 2643 )
-                    {
+                    if ( $count > 2643 ) {
                         $count -= 1;
                         last;
                     }
@@ -249,11 +266,9 @@ EOF
                 is( $count, 2643, "insert ?NUMBER [ VALUES ]" )
                     ;    # do/INSERTs successful using ?N and anonymous list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 3524 )
-                    {
+                    if ( $count > 3524 ) {
                         $count -= 1;
                         last;
                     }
@@ -267,11 +282,9 @@ EOF
                 is( $count, 3524, "insert :NAME ( KEY-VALUE PAIRS )" )
                     ;    # do/INSERTs successful using :NAME with list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 4405 )
-                    {
+                    if ( $count > 4405 ) {
                         $count -= 1;
                         last;
                     }
@@ -285,11 +298,9 @@ EOF
                 is( $count, 4405, "insert :NAME [ KEY-VALUE PAIRS ]" )
                     ;    # do/INSERTs successful using :NAME with anonymous list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 5286 )
-                    {
+                    if ( $count > 5286 ) {
                         $count -= 1;
                         last;
                     }
@@ -303,11 +314,9 @@ EOF
                 is( $count, 5286, "insert :NAME { KEY-VALUE PAIRS }" )
                     ;    # do/INSERTs successful using :NAME with anonymous hash
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 6167 )
-                    {
+                    if ( $count > 6167 ) {
                         $count -= 1;
                         last;
                     }
@@ -321,11 +330,9 @@ EOF
                 is( $count, 6167, "insert \@NAME ( KEY-VALUE PAIRS )" )
                     ;    # do/INSERTs successful using @NAME with anonymous list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 7048 )
-                    {
+                    if ( $count > 7048 ) {
                         $count -= 1;
                         last;
                     }
@@ -339,11 +346,9 @@ EOF
                 is( $count, 7048, "insert \@NAME [ KEY-VALUE PAIRS ]" )
                     ;    # do/INSERTs successful using @NAME with anonymous list
 
-                while ( @test_data )
-                {
+                while ( @test_data ) {
                     $count++;
-                    if ( $count > 7929 )
-                    {
+                    if ( $count > 7929 ) {
                         $count -= 1;
                         last;
                     }
@@ -495,8 +500,8 @@ EOF
                 ];
                 $count = 0;
                 $result = $dbh->getrows_arrayref(
-                    $sql, 1, 1.0, callback
-                    {
+                    $sql, 1, 1.0,
+                    callback {
                         my $row = $_;
                         diag sprintf "%2d. %s", ++$count, encode_json( $row );
                         return $row;
@@ -509,8 +514,8 @@ EOF
                     = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :1 AND security >= :2';
                 $count = 0;
                 $result = $dbh->getrows_arrayref(
-                    $sql, 1, 1.0, callback
-                    {
+                    $sql, 1, 1.0,
+                    callback {
                         my $row = $_;
                         ++$count;
                         return $row;
@@ -523,8 +528,9 @@ EOF
                     = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :1 AND security >= :2';
                 $count = 0;
                 $result = $dbh->getrows_arrayref(
-                    $sql, [ 1, 1.0 ], callback
-                    {
+                    $sql,
+                    [ 1, 1.0 ],
+                    callback {
                         my $row = $_;
                         ++$count;
                         return $row;
@@ -537,8 +543,8 @@ EOF
                     = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = ?1 AND security >= ?2';
                 $count = 0;
                 $result = $dbh->getrows_arrayref(
-                    $sql, 1, 1.0, callback
-                    {
+                    $sql, 1, 1.0,
+                    callback {
                         my $row = $_;
                         ++$count;
                         return $row;
@@ -551,8 +557,9 @@ EOF
                     = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = ?1 AND security >= ?2';
                 $count = 0;
                 $result = $dbh->getrows_arrayref(
-                    $sql, [ 1, 1.0 ], callback
-                    {
+                    $sql,
+                    [ 1, 1.0 ],
+                    callback {
                         my $row = $_;
                         ++$count;
                         return $row;
@@ -568,8 +575,7 @@ EOF
                     $sql,
                     regional => 1,
                     security => 1.0,
-                    callback
-                    {
+                    callback {
                         my $row = $_;
                         ++$count;
                         return $row;
@@ -582,8 +588,9 @@ EOF
                     = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = :regional AND security >= :security';
                 $count = 0;
                 $result = $dbh->getrows_arrayref(
-                    $sql, [ regional => 1, security => 1.0 ], callback
-                    {
+                    $sql,
+                    [ regional => 1, security => 1.0 ],
+                    callback {
                         my $row = $_;
                         ++$count;
                         return $row;
@@ -614,8 +621,7 @@ EOF
                     $sql,
                     '@regional' => 1,
                     '@security' => 1.0,
-                    callback
-                    {
+                    callback {
                         my $row = $_;
                         ++$count;
                         return $row;
@@ -628,8 +634,9 @@ EOF
                     = 'SELECT solarSystemName, security FROM mapsolarsystems WHERE regional = @regional AND security >= @security';
                 $count = 0;
                 $result = $dbh->getrows_arrayref(
-                    $sql, [ '@regional' => 1, '@security' => 1.0 ], callback
-                    {
+                    $sql,
+                    [ '@regional' => 1, '@security' => 1.0 ],
+                    callback {
                         my $row = $_;
                         ++$count;
                         return $row;
@@ -665,6 +672,7 @@ EOF
                             { name => 'Yulai',       security => '1' }
                 ];
                 my $sth = $dbh->prepare( $sql );
+                $sth->execute( regional => 1, security => 1.0 );
                 statement( $sth );
                 is( statement(), $sth, 'statement handle proxy assignment' );
                 $result = statement( regional => 1, security => 1.0 );
@@ -674,7 +682,7 @@ EOF
 
             $dbh->disconnect();
         } ## end SKIP:
-    } ## end for my $driver ( @drivers...)
+    } ## end for my $driver ( @drivers)
 } ## end SKIP:
 
 done_testing();

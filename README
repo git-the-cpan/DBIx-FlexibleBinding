@@ -3,7 +3,7 @@ NAME
     choice and data binding
 
 VERSION
-    version 2.0.1
+    version 2.0.3
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of
@@ -94,8 +94,8 @@ SYNOPSIS
                                 is_regional => 1,
                                 minimum_security => 1.0,
                                 callback { $_->{name} });
+    =head1 DESCRIPTION
 
-DESCRIPTION
     This module subclasses the DBI to provide improvements and greater
     flexibility in the following areas:
 
@@ -227,14 +227,6 @@ DESCRIPTION
                                        is_regional => 1,
                                        minimum_security => 1.0);
 
-          # Using -subs also relaxes strict 'subs' in the caller's scope, so pretty-up
-          # void context calls by losing the parentheses, if you wish to use callbacks
-          # to process the results ...
-          #
-          MyDB SQL, is_regional => 1, minimum_security => 1.0, callback {
-              printf "%-16s %.1f\n", $_->{solarSystemName}, $_->{security};
-          };
-
           # You can use proxies to represent statements, too. Simply pass in a statement
           # handle as the only argument ...
           #
@@ -313,10 +305,6 @@ IMPORT TAGS AND OPTIONS
             my ($row) = @_;
             print "$row->{name}\n";
         };
-
-    Use of this option automatically relaxes "strict 'subs'" for the
-    remainder of scope containing the "use" directive. That is unless "use
-    strict 'subs'" or "use strict" appears afterwards.
 
 CLASS METHODS
   connect

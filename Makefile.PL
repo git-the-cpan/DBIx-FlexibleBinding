@@ -2,42 +2,37 @@
 use strict;
 use warnings;
 
-use 5.006;
+use 5.008008;
 
 use ExtUtils::MakeMaker;
 
 my %WriteMakefileArgs = (
-  "ABSTRACT" => "Greater flexibility on statement placeholder choice and data binding",
+  "ABSTRACT" => "Greater statement placeholder and data-binding flexibility.",
   "AUTHOR" => "Iain Campbell <cpanic\@cpan.org>",
   "CONFIGURE_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0
   },
   "DISTNAME" => "DBIx-FlexibleBinding",
   "LICENSE" => "perl",
-  "MIN_PERL_VERSION" => "5.006",
+  "MIN_PERL_VERSION" => "5.008008",
   "NAME" => "DBIx::FlexibleBinding",
   "PREREQ_PM" => {
-    "Carp" => 0,
     "DBI" => 0,
-    "Exporter" => 0,
     "List::MoreUtils" => 0,
     "MRO::Compat" => 0,
+    "Message::String" => 0,
     "Params::Callbacks" => 0,
-    "Scalar::Util" => 0,
-    "Sub::Install" => 0,
-    "namespace::clean" => 0,
-    "strict" => 0,
-    "warnings" => 0
+    "Sub::Util" => 0,
+    "namespace::clean" => 0
   },
   "TEST_REQUIRES" => {
     "DBD::CSV" => 0,
     "DBD::SQLite" => 0,
     "DBD::mysql" => 0,
-    "Data::Dumper" => 0,
-    "JSON" => 0,
-    "Test::More" => 0
+    "Data::Dumper::Concise" => 0,
+    "JSON" => 0
   },
-  "VERSION" => "2.0.2",
+  "VERSION" => "2.0.3",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -45,23 +40,18 @@ my %WriteMakefileArgs = (
 
 
 my %FallbackPrereqs = (
-  "Carp" => 0,
   "DBD::CSV" => 0,
   "DBD::SQLite" => 0,
   "DBD::mysql" => 0,
   "DBI" => 0,
-  "Data::Dumper" => 0,
-  "Exporter" => 0,
+  "Data::Dumper::Concise" => 0,
   "JSON" => 0,
   "List::MoreUtils" => 0,
   "MRO::Compat" => 0,
+  "Message::String" => 0,
   "Params::Callbacks" => 0,
-  "Scalar::Util" => 0,
-  "Sub::Install" => 0,
-  "Test::More" => 0,
-  "namespace::clean" => 0,
-  "strict" => 0,
-  "warnings" => 0
+  "Sub::Util" => 0,
+  "namespace::clean" => 0
 );
 
 
