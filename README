@@ -1,9 +1,9 @@
 NAME
-    DBIx::FlexibleBinding - Greater flexibility on statement placeholder
-    choice and data binding
+    DBIx::FlexibleBinding - Greater statement placeholder and data-binding
+    flexibility.
 
 VERSION
-    version 2.0.3
+    version 2.0.4
 
 SYNOPSIS
     This module extends the DBI allowing you choose from a variety of
@@ -65,9 +65,9 @@ SYNOPSIS
         # Cut out the middle men ...
         #
         my @system_names = $dbh->getrows_hashref(SQL,
-                                                    is_regional => 1,
-                                                    minimum_security => 1.0,
-                                                    callback { $_->{name} });
+                                                 is_regional => 1,
+                                                 minimum_security => 1.0,
+                                                 callback { $_->{name} });
 
         #############################################################################
         # SCENARIO 3                                                                #
@@ -94,8 +94,8 @@ SYNOPSIS
                                 is_regional => 1,
                                 minimum_security => 1.0,
                                 callback { $_->{name} });
-    =head1 DESCRIPTION
 
+DESCRIPTION
     This module subclasses the DBI to provide improvements and greater
     flexibility in the following areas:
 
@@ -104,6 +104,9 @@ SYNOPSIS
     * Data retrieval and processing
 
     * Accessing and interacting with datasources
+
+    It may be most useful in situations that require a lot of database code
+    to be written quickly.
 
   Parameter placeholders and data binding
     This module provides support for a wider range of parameter placeholder

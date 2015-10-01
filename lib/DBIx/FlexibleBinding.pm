@@ -3,7 +3,7 @@ use warnings;
 use MRO::Compat 'c3';
 
 package DBIx::FlexibleBinding;
-our $VERSION = '2.0.3'; # VERSION
+our $VERSION = '2.0.4'; # VERSION
 # ABSTRACT: Greater statement placeholder and data-binding flexibility.
 use DBI             ();
 use Exporter        ();
@@ -124,18 +124,15 @@ sub _service_call_to_a_dbi_handle_proxy
             or CRIT_DBI( $DBI::errstr );
     }
     else {
-        if ( $proxies{$fqpi} ) {
-            my $proxy = $proxies{$fqpi};
-            $proxy->execute( @args )
-                if $proxy->isa( "$package\::st" );
-            return $proxy->getrows( @args );
-        }
-        else {
-            CRIT_PROXY_UNDEF( $fqpi );
-        }
+        CRIT_PROXY_UNDEF( $fqpi )
+            unless $proxies{$fqpi};
+        my $proxy = $proxies{$fqpi};
+        $proxy->execute( @args )
+            if $proxy->isa( "$package\::st" );
+        return $proxy->getrows( @args );
     }
     return $proxies{$fqpi};
-} ## end sub _service_call_to_a_dbi_handle_proxy
+}
 
 sub import
 {
@@ -179,7 +176,7 @@ sub connect
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::db;
-our $VERSION = '2.0.3'; # VERSION
+our $VERSION = '2.0.4'; # VERSION
 
 BEGIN {
     *_is_hashref     = \&DBIx::FlexibleBinding::_is_hashref;
@@ -314,7 +311,7 @@ BEGIN {
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::st;
-our $VERSION = '2.0.3'; # VERSION
+our $VERSION = '2.0.4'; # VERSION
 
 BEGIN {
     *_is_arrayref    = \&DBIx::FlexibleBinding::_is_arrayref;
@@ -614,7 +611,7 @@ BEGIN {
 
 package    # Hide from PAUSE
     DBIx::FlexibleBinding::Iterator;
-our $VERSION = '2.0.3'; # VERSION
+our $VERSION = '2.0.4'; # VERSION
 
 use Params::Callbacks ( 'callbacks' );
 use namespace::clean;
@@ -639,11 +636,11 @@ sub for_each
 
 =head1 NAME
 
-DBIx::FlexibleBinding - Greater flexibility on statement placeholder choice and data binding
+DBIx::FlexibleBinding - Greater statement placeholder and data-binding flexibility.
 
 =head1 VERSION
 
-version 2.0.3
+version 2.0.4
 
 =head1 SYNOPSIS
 
@@ -705,9 +702,9 @@ ways to interact with datasources, while improving general readability.
     # Cut out the middle men ...
     #
     my @system_names = $dbh->getrows_hashref(SQL,
-                                                is_regional => 1,
-                                                minimum_security => 1.0,
-                                                callback { $_->{name} });
+                                             is_regional => 1,
+                                             minimum_security => 1.0,
+                                             callback { $_->{name} });
 
     #############################################################################
     # SCENARIO 3                                                                #
@@ -734,6 +731,7 @@ ways to interact with datasources, while improving general readability.
                             is_regional => 1,
                             minimum_security => 1.0,
                             callback { $_->{name} });
+
 =head1 DESCRIPTION
 
 This module subclasses the DBI to provide improvements and greater flexibility
@@ -748,6 +746,9 @@ in the following areas:
 =item * Accessing and interacting with datasources
 
 =back
+
+It may be most useful in situations that require a lot of database code to
+be written quickly.
 
 =head2 Parameter placeholders and data binding
 

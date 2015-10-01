@@ -1,3 +1,7 @@
+2.0.4     2015-10-01 22:50:25+01:00 Europe/London
+    - Fix broken mysql test that should skip on connection failure but does
+      not. 
+      
 2.0.3     2015-10-01 20:18:14+01:00 Europe/London
     - Maintenance release.
     

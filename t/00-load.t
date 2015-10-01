@@ -91,16 +91,23 @@ EOF
     my $name1_placeholders = join( ', ', map {":$_"} @headings );
     my $name2_placeholders = join( ', ', map {"\@$_"} @headings );
 
-    is_deeply(scalar(DBIx::FlexibleBinding::_as_list_or_ref([])), [], '_as_list_or_ref');
-    is_deeply(scalar(DBIx::FlexibleBinding::_as_list_or_ref(undef)), undef, '_as_list_or_ref');
-    is_deeply([DBIx::FlexibleBinding::_as_list_or_ref(undef)], [], '_as_list_or_ref');
-    is_deeply([DBIx::FlexibleBinding::_as_list_or_ref([])], [], '_as_list_or_ref');
+    is_deeply(
+        scalar( DBIx::FlexibleBinding::_as_list_or_ref( [] ) ), [],
+        '_as_list_or_ref' );
+    is_deeply( scalar( DBIx::FlexibleBinding::_as_list_or_ref( undef ) ), undef,
+               '_as_list_or_ref' );
+    is_deeply(
+        [ DBIx::FlexibleBinding::_as_list_or_ref( undef ) ], [],
+        '_as_list_or_ref' );
+    is_deeply(
+        [ DBIx::FlexibleBinding::_as_list_or_ref( [] ) ], [],
+        '_as_list_or_ref' );
 
     my $n_keys = keys %::;
     DBIx::FlexibleBinding->_create_namespace_alias();
-    is(scalar(keys %::), $n_keys);
-    DBIx::FlexibleBinding->_create_namespace_alias('Foo');
-    isnt(scalar(keys %::), $n_keys);
+    is( scalar( keys %:: ), $n_keys );
+    DBIx::FlexibleBinding->_create_namespace_alias( 'Foo' );
+    isnt( scalar( keys %:: ), $n_keys );
 
     DB( undef );
     is( DB, undef );
@@ -115,10 +122,12 @@ EOF
     };
     like( $@, qr/CRIT_EXP_HANDLE/ );
 
-    eval { DBIx::FlexibleBinding->import('-unexp_arg') };
+    eval { DBIx::FlexibleBinding->import( '-unexp_arg' ) };
     like( $@, qr/CRIT_UNEXP_ARG/ );
 
-    eval { DBIx::FlexibleBinding->_create_dbi_handle_proxies('Foo', sub {}) };
+    eval {
+        DBIx::FlexibleBinding->_create_dbi_handle_proxies( 'Foo', sub { } );
+    };
     like( $@, qr/CRIT_EXP_SUB_NAMES/ );
 
     for my $driver ( @drivers ) {
@@ -132,15 +141,15 @@ EOF
                 $create_copy = $create;
                 s/ DEFAULT NULL//g, s/ DOUBLE/ REAL/g, s/ (?:TINYINT|INT)/ INTEGER/g
                     for $create_copy;
-                $dbh = DB( $dsn, @user, $attr );
+                $dbh = eval { DB( $dsn, @user, $attr ) };
 
                 DB( $dbh );
                 is( DB, $dbh );
             }
             elsif ( $driver eq 'SQLite' ) {
-                ( $dsn, @user, $attr ) = ( "dbi:$driver:test.db", '', '', {} );
+                ( $dsn, @user, $attr ) = ( "dbi:$driver:test.db", '', '', {RaiseError=>0} );
                 $create_copy = $create;
-                $dbh = DB( $dsn, @user, $attr );
+                $dbh = eval { DB( $dsn, @user, $attr ) };
 
                 DB( $dbh );
                 is( DB, $dbh );
@@ -148,8 +157,9 @@ EOF
             else {
                 ( $dsn, @user, $attr ) = (
                                          "dbi:$driver:test;host=127.0.0.1", $ENV{MYSQL_TEST_USER},
-                                         $ENV{MYSQL_TEST_PASS},             $attr );
-                $dbh = DB( $dsn, @user, $attr );
+                                         $ENV{MYSQL_TEST_PASS},             {RaiseError=>0} );
+                $dbh = eval { DB( $dsn, @user, $attr ) };
+
                 DB( $dbh );
                 is( DB, $dbh );
                 $create_copy = $create;
